@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% block title %}{{ guild.name }} — Veritas{% endblock %}
+{% block content %}
+<p class="crumb"><a href="/dashboard">← Servers</a></p>
+<section class="hero-panel">
+  <div>
+    <h1>{{ guild.name }}</h1>
+    <p>
+      {% if bot_in %}
+      Bot is in this server. Changes save to the same settings file the bot reads.
+      {% else %}
+      Veritas is not in this server yet.
+      <a href="{{ invite_url }}" target="_blank" rel="noreferrer">Invite it</a>
+      first.
+      {% endif %}
+    </p>
+  </div>
+  {% if plan.plan == "premium" %}
+  <span class="badge">Premium</span>
+  {% elif plan.plan == "trial" %}
+  <span class="badge trial">Demo · until {{ plan.trial_ends }}</span>
+  {% else %}
+  <span class="badge muted">Free</span>
+  {% endif %}
+</section>
+
+{% if saved %}
+<article class="notice ok">Settings saved.</article>
+{% endif %}
+{% if paid %}
+<article class="notice ok">Payment received — Premium unlocks within a minute after Stripe confirms.</article>
+{% endif %}
+{% if canceled %}
+<article class="notice">Checkout canceled. You can try again anytime.</article>
+{% endif %}
+
+<section class="plans-grid compact">
+  <article class="plan-card {% if plan.plan == 'free' %}current{% endif %}">
+    <h2>Free</h2>
+    <p class="plan-price">$0 forever</p>
+    <ul>
+      {% for item in free_features %}
+      <li>{{ item }}</li>
+      {% endfor %}
+    </ul>
+  </article>
+  <article class="plan-card accent {% if plan.active %}current{% endif %}">
+    <h2>{% if plan.plan == "premium" %}Premium{% else %}Premium / Demo{% endif %}</h2>
+    {% if plan.plan == "trial" %}
+    <p class="plan-price">Active demo</p>
+    <p class="plan-note">Ends {{ plan.trial_ends }}. After that this server returns to Free unless you upgrade.</p>
+    {% elif plan.plan == "premium" %}
+    <p class="plan-price">Active · {{ price_label }}</p>
+    <p class="plan-note">Paid Premium is enabled for this server.</p>
+    {% else %}
+    <p class="plan-price">{{ price_label }}</p>
+    <p class="plan-note">
+      Early demo slots: {{ plan.slots_used }}/{{ plan.slots_limit }}.
+      Or upgrade with card / PayPal below.
+    </p>
+    {% endif %}
+    <ul>
+      {% for item in premium_features %}
+      <li>{{ item }}</li>
+      {% endfor %}
+    </ul>
+    <div class="pay-actions">
+      {% if payments_enabled and plan.plan != "premium" %}
+      <form method="post" action="/dashboard/{{ guild.id }}/checkout">
+        <button class="btn" type="submit">Upgrade with Stripe</button>
+      </form>
+      {% elif is_paid_premium %}
+      <form method="post" action="/dashboard/{{ guild.id }}/billing">
+        <button class="btn" type="submit">Manage billing</button>
+      </form>
+      {% elif not payments_enabled %}
+      <p class="plan-note">Stripe not connected yet — owner must add keys in hosting env.</p>
+      {% endif %}
+      {% if paypal_url and plan.plan != "premium" %}
+      <a class="btn btn-ghost" href="{{ paypal_url }}" target="_blank" rel="noreferrer">Pay with PayPal</a>
+      {% endif %}
+    </div>
+  </article>
+</section>
+
+{% if bot_in %}
+<form method="post" action="/dashboard/{{ guild.id }}/save" class="settings-form">
+  <fieldset>
+    <legend>Server language</legend>
+    <label>
+      AI reply language
+      <select name="language">
+        <option value="auto" {% if language == "auto" %}selected{% endif %}>Auto (match user)</option>
+        <option value="en" {% if language == "en" %}selected{% endif %}>English</option>
+        <option value="pl" {% if language == "pl" %}selected{% endif %}>Polish</option>
+        <option value="ru" {% if language == "ru" %}selected{% endif %}>Russian</option>
+        <option value="zh" {% if language == "zh" %}selected{% endif %}>Chinese</option>
+      </select>
+    </label>
+  </fieldset>
+
+  <fieldset>
+    <legend>Channels</legend>
+    {% if not has_premium %}
+    <p class="muted">
+      Watchlist and auto-chat modes <strong>Questions</strong> / <strong>Almost all</strong>
+      need Premium or an active demo. On Free they are ignored and kept at Mentions.
+    </p>
+    {% endif %}
+    {% if channels %}
+    <div class="channel-table">
+      <div class="channel-head">
+        <span>Channel</span>
+        <span>Auto-chat</span>
+        <span>Watchlist</span>
+      </div>
+      {% for ch in channels %}
+      <div class="channel-row">
+        <span>#{{ ch.name }}</span>
+        <label>
+          <select name="autochat_{{ ch.id }}">
+            <option value="off" {% if ch.autochat == "off" %}selected{% endif %}>Off</option>
+            <option value="mention" {% if ch.autochat == "mention" %}selected{% endif %}>Mentions</option>
+            <option value="questions" {% if ch.autochat == "questions" %}selected{% endif %}>Questions {% if not has_premium %}(Premium){% endif %}</option>
+            <option value="all" {% if ch.autochat == "all" %}selected{% endif %}>Almost all {% if not has_premium %}(Premium){% endif %}</option>
+          </select>
+        </label>
+        <label class="check">
+          <input type="checkbox" name="watchlist_{{ ch.id }}" {% if ch.watchlist %}checked{% endif %} {% if not has_premium %}disabled{% endif %} />
+          On {% if not has_premium %}(Premium){% endif %}
+        </label>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="muted">No text channels found (or missing permissions).</p>
+    {% endif %}
+  </fieldset>
+
+  <button class="btn" type="submit">Save changes</button>
+</form>
+{% endif %}
+{% endblock %}

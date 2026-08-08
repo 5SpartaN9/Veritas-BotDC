@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{% block title %}Veritas Dashboard{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Manrope:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/static/dashboard.css" />
+  </head>
+  <body>
+    <header class="top">
+      <a class="brand" href="/">Veritas</a>
+      <nav>
+        <a href="/">Home</a>
+        <a href="/dashboard">Servers</a>
+        {% if user %}
+        <span class="user">{{ user.username }}</span>
+        <a href="/auth/logout">Logout</a>
+        {% else %}
+        <a class="btn" href="/auth/login">Login</a>
+        {% endif %}
+      </nav>
+    </header>
+    <main class="wrap">
+      {% block content %}{% endblock %}
+    </main>
+  </body>
+</html>

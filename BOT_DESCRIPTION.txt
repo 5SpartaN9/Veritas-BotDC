@@ -1,0 +1,20 @@
+=== Discord Developer Portal → Description (short, paste this) ===
+
+Veritas is an AI fact-checking bot for Discord. It verifies claims using official and scientific sources, answers questions, and can reply when you mention it. Try /ask, /check, or reply to a message with @Veritas is that true? Music commands included. Start with /about or /help.
+
+
+=== Longer blurb (website / top.gg / server rules) ===
+
+Veritas — AI fact-checking for Discord
+
+Veritas checks claims and answers questions using mainly official institutions and scientific sources (not social media rumors).
+
+Quick start:
+• /about — what Veritas is
+• /help — full command list
+• /ask question: your question
+• /check text: a claim to verify
+• Reply to any message with @Veritas is that true?
+• Right-click a message → Apps → Verify claim
+
+Also: /explain, /sources, /compare, /cite, and music via /music.

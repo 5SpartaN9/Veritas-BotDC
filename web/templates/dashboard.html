@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — Veritas{% endblock %}
+{% block content %}
+<section class="hero-panel">
+  <div>
+    <h1>Your servers</h1>
+    <p>Configure language, auto-chat, and watchlist — Free forever, Premium when you need more.</p>
+  </div>
+  <a class="btn" href="{{ invite_url }}" target="_blank" rel="noreferrer">Add Veritas</a>
+</section>
+
+<section class="plans-grid">
+  <article class="plan-card">
+    <h2>Free</h2>
+    <p class="plan-price">$0</p>
+    <ul>
+      {% for item in free_features %}
+      <li>{{ item }}</li>
+      {% endfor %}
+    </ul>
+  </article>
+  <article class="plan-card accent">
+    <h2>Premium / Demo</h2>
+    <p class="plan-price">Demo · 3 months</p>
+    <p class="plan-note">
+      First {{ early_slots_limit }} servers get a full Premium demo
+      ({{ early_slots_used }}/{{ early_slots_limit }} used).
+    </p>
+    <ul>
+      {% for item in premium_features %}
+      <li>{{ item }}</li>
+      {% endfor %}
+    </ul>
+  </article>
+</section>
+
+{% if setup_needed %}
+<article class="notice">
+  <h2>Setup required</h2>
+  <p>
+    Add <code>DISCORD_CLIENT_SECRET</code> to your <code>.env</code>, then in
+    Discord Developer Portal → OAuth2 → Redirects add:
+  </p>
+  <code>http://127.0.0.1:8000/auth/callback</code>
+  <p>Restart the web panel after saving.</p>
+</article>
+{% endif %}
+
+{% if error %}
+<article class="notice bad">
+  <strong>Could not load servers:</strong> {{ error }}
+</article>
+{% endif %}
+
+{% if not setup_needed %}
+<div class="server-list">
+  {% for guild in guilds %}
+  <a class="server" href="/dashboard/{{ guild.id }}">
+    <div>
+      <strong>{{ guild.name }}</strong>
+      <span>
+        {% if guild.bot_in_guild %}Bot installed{% else %}Invite needed{% endif %}
+        ·
+        {% if guild.plan == "premium" %}
+          Premium
+        {% elif guild.plan == "trial" %}
+          Demo until {{ guild.trial_ends }}
+        {% else %}
+          Free
+        {% endif %}
+      </span>
+    </div>
+    <span class="chev">Configure →</span>
+  </a>
+  {% else %}
+  <article class="notice">
+    No manageable servers found. You need <strong>Manage Server</strong> permission,
+    and Veritas should be invited to the server.
+  </article>
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}
