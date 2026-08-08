@@ -1,13 +1,21 @@
-=== Discord Developer Portal → Description (short, paste this) ===
+=== Discord Developer Portal → Description (paste this) ===
 
-Veritas is an AI fact-checking bot for Discord. It verifies claims using official and scientific sources, answers questions, and can reply when you mention it. Try /ask, /check, or reply to a message with @Veritas is that true? Music commands included. Start with /about or /help.
+AI fact-checking for Discord — official & scientific sources. Try /ask, /check, or @Veritas. Web panel: https://5spartan9.github.io/Veritas-BotDC/
 
 
-=== Longer blurb (website / top.gg / server rules) ===
+=== Discord → About Me (max ~190 chars) ===
+
+AI fact-check bot. /ask · /check · @Veritas. Panel: https://5spartan9.github.io/Veritas-BotDC/
+
+
+=== Longer blurb (top.gg / server rules) ===
 
 Veritas — AI fact-checking for Discord
 
 Veritas checks claims and answers questions using mainly official institutions and scientific sources (not social media rumors).
+
+Website / panel: https://5spartan9.github.io/Veritas-BotDC/
+Dashboard login (when hosted): set PANEL_URL in .env
 
 Quick start:
 • /about — what Veritas is

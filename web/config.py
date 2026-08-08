@@ -19,6 +19,11 @@ SESSION_SECRET = os.getenv("SESSION_SECRET", "change-me-veritas-dev-secret")
 WEB_HOST = os.getenv("WEB_HOST", "127.0.0.1")
 WEB_PORT = int(os.getenv("WEB_PORT", "8000"))
 PUBLIC_BASE_URL = os.getenv("PUBLIC_BASE_URL", "http://127.0.0.1:8000").rstrip("/")
+SITE_URL = os.getenv(
+    "SITE_URL",
+    "https://5spartan9.github.io/Veritas-BotDC/",
+).rstrip("/") + "/"
+PANEL_URL = os.getenv("PANEL_URL", f"{PUBLIC_BASE_URL}/dashboard")
 
 # Payments — Stripe (cards, BLIK via local methods, optional PayPal in Stripe Dashboard)
 STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "")

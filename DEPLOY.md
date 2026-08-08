@@ -2,15 +2,19 @@
 
 ## Public website (GitHub Pages)
 
-Landing page lives in `website/`. After you push to `main`, GitHub Actions
-deploys it to GitHub Pages.
+Live URL:
 
-1. Repo → **Settings → Pages → Source: GitHub Actions**
-2. Push to `main` (or run the **Deploy website** workflow)
-3. URL looks like: `https://YOUR_USER.github.io/Veritas-BotDC/`
+https://5spartan9.github.io/Veritas-BotDC/
 
-If the site is in a subpath, open `website/index.html` and keep asset paths
-relative (`styles.css`, `assets/...`) — they already are.
+Source for Pages is the `docs/` folder (GitHub only allows `/` or `/docs`).
+Edit `website/` for the app copy, then sync to `docs/` before push:
+
+```powershell
+Remove-Item -Recurse -Force docs
+Copy-Item -Recurse website docs
+```
+
+Or edit `docs/` directly when you only change the public landing.
 
 ## Dashboard + payments (Render / any VPS)
 
