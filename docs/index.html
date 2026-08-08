@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Veritas — AI Fact-Checking for Discord</title>
+    <meta
+      name="description"
+      content="Veritas verifies claims on Discord using official and scientific sources. Ask questions, fact-check messages, and cut through noise."
+    />
+    <link rel="icon" href="assets/veritas-icon.png" type="image/png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Manrope:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="noise" aria-hidden="true"></div>
+
+    <header class="nav">
+      <a class="nav-brand" href="#top">Veritas</a>
+      <nav class="nav-links">
+        <a href="#features">Features</a>
+        <a href="#commands">Commands</a>
+        <a href="#pricing">Pricing</a>
+      </nav>
+      <a class="btn btn-small" href="#invite">Add to Discord</a>
+    </header>
+
+    <main id="top">
+      <section class="hero">
+        <div class="hero-visual" aria-hidden="true">
+          <div class="hero-glow"></div>
+          <svg class="hero-mark" viewBox="0 0 600 600" fill="none">
+            <path
+              d="M120 110 L300 490 L480 110"
+              stroke="currentColor"
+              stroke-width="42"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+            <path
+              d="M300 170 V430"
+              stroke="currentColor"
+              stroke-width="18"
+              stroke-linecap="round"
+              opacity="0.55"
+            />
+            <circle cx="300" cy="300" r="18" fill="currentColor" />
+          </svg>
+        </div>
+
+        <div class="hero-copy">
+          <p class="brand">Veritas</p>
+          <h1>Truth over noise.</h1>
+          <p class="lede">
+            An AI fact-checking bot for Discord — built around official data and
+            scientific sources, not social media rumors.
+          </p>
+          <div class="cta-row">
+            <a class="btn" id="invite" href="https://discord.com/api/oauth2/authorize?client_id=1533047923829375056&permissions=36703232&scope=bot%20applications.commands">
+              Add to Discord
+            </a>
+            <a class="btn btn-ghost" href="#commands">See commands</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="features">
+        <div class="section-head reveal">
+          <h2>Built for claims, not chaos.</h2>
+          <p>
+            Veritas focuses on one job: checking what people say against sources
+            that actually matter.
+          </p>
+        </div>
+
+        <div class="feature-list">
+          <article class="feature reveal">
+            <h3>Official & scientific first</h3>
+            <p>
+              Prioritizes institutions and peer-reviewed research. If evidence is
+              weak, it says unverified instead of guessing.
+            </p>
+          </article>
+          <article class="feature reveal">
+            <h3>Reply to check</h3>
+            <p>
+              Reply to any message with
+              <code>@Veritas is that true?</code> — no need to repeat the claim.
+            </p>
+          </article>
+          <article class="feature reveal">
+            <h3>Clear verdicts</h3>
+            <p>
+              Structured answers with confidence, uncertainty, and source links —
+              readable embeds, not walls of text.
+            </p>
+          </article>
+          <article class="feature reveal">
+            <h3>Multilingual</h3>
+            <p>
+              Auto-matches the user’s language, or lock a server to English,
+              Polish, Russian, or Chinese.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section section-alt" id="commands">
+        <div class="section-head reveal">
+          <h2>Commands that matter.</h2>
+          <p>Start with these. Full list lives in <code>/help</code> and <code>/about</code>.</p>
+        </div>
+
+        <div class="command-grid reveal">
+          <div class="command">
+            <code>/check</code>
+            <span>Fact-check a statement</span>
+          </div>
+          <div class="command">
+            <code>/ask</code>
+            <span>Ask from reliable sources</span>
+          </div>
+          <div class="command">
+            <code>/debate</code>
+            <span>Fact / opinion / unproven</span>
+          </div>
+          <div class="command">
+            <code>/multicheck</code>
+            <span>Verify several claims at once</span>
+          </div>
+          <div class="command">
+            <code>/explain</code>
+            <span>Simple explanation + sources</span>
+          </div>
+          <div class="command">
+            <code>/sources</code>
+            <span>Credible sources for a topic</span>
+          </div>
+          <div class="command">
+            <code>@Veritas</code>
+            <span>Chat reply / verify by mention</span>
+          </div>
+          <div class="command">
+            <code>/music</code>
+            <span>Optional playback controls</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="pricing">
+        <div class="section-head reveal">
+          <h2>Free forever. Premium when you need more.</h2>
+          <p>
+            Core fact-checking stays free. The first 100 servers get a full
+            3-month Premium demo — after that, upgrade when you need higher limits.
+          </p>
+        </div>
+
+        <div class="pricing reveal">
+          <div class="plan">
+            <h3>Free</h3>
+            <p class="price">$0</p>
+            <ul>
+              <li>`/ask`, `/check`, `/explain`, `/sources`, `/compare`, `/cite`</li>
+              <li>Mention & reply fact-checks</li>
+              <li>Basic auto-chat (mentions)</li>
+              <li>Fair daily AI limits</li>
+            </ul>
+          </div>
+          <div class="plan plan-accent">
+            <h3>Premium</h3>
+            <p class="price">$4.99 / mo</p>
+            <ul>
+              <li>Everything in Free</li>
+              <li>`/debate`, `/multicheck`, watchlist</li>
+              <li>Auto-chat: questions / almost all</li>
+              <li>Higher per-user and per-server limits</li>
+              <li>Pay with card (Stripe) or PayPal</li>
+              <li>First 100 servers unlock a 3-month demo</li>
+            </ul>
+            <a class="btn" href="https://discord.com/api/oauth2/authorize?client_id=1533047923829375056&permissions=36703232&scope=bot%20applications.commands">
+              Get Premium via dashboard
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <section class="section cta-band reveal">
+        <h2>Cut the nonsense. Keep the sources.</h2>
+        <p>Invite Veritas and pin <code>/about</code> in your server.</p>
+        <a
+          class="btn"
+          href="https://discord.com/api/oauth2/authorize?client_id=1533047923829375056&permissions=36703232&scope=bot%20applications.commands"
+        >
+          Add to Discord
+        </a>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div>
+        <strong>Veritas</strong>
+        <span>AI fact-checking for Discord</span>
+      </div>
+      <div class="footer-links">
+        <a href="#features">Features</a>
+        <a href="#commands">Commands</a>
+        <a href="#pricing">Pricing</a>
+        <a href="https://discord.com/api/oauth2/authorize?client_id=1533047923829375056&permissions=36703232&scope=bot%20applications.commands">Invite</a>
+      </div>
+      <p class="fineprint">Not affiliated with Discord Inc. Use responsibly.</p>
+    </footer>
+
+    <script src="script.js"></script>
+  </body>
+</html>
