@@ -11,8 +11,11 @@ EARLY_TRIAL_DAYS = 90
 # Budget-friendly limits (Gemini costs money per request)
 FREE_USER_RPM = 2          # per 10 minutes
 PREMIUM_USER_RPM = 8
+ULTRA_USER_RPM = 20
+
 FREE_GUILD_DAILY = 15
 PREMIUM_GUILD_DAILY = 80
+ULTRA_GUILD_DAILY = 500    # big servers (thousands of members)
 
 PREMIUM_COMMANDS = {"debate", "multicheck", "watchcheck"}
 PREMIUM_AUTOCHAT_MODES = {"questions", "all"}
@@ -20,7 +23,7 @@ PREMIUM_AUTOCHAT_MODES = {"questions", "all"}
 
 @dataclass
 class PlanInfo:
-    plan: str  # free | trial | premium
+    plan: str  # free | trial | premium | ultra
     active: bool
     label: str
     trial_ends: str | None = None
@@ -48,13 +51,25 @@ def _parse_iso(value: str | None) -> datetime | None:
 def get_plan_info(guild_id: int) -> PlanInfo:
     data = settings_store.get_guild_plan(guild_id)
     slots_used = settings_store.count_early_trials()
-    if data.get("premium"):
+    early_slot = bool(data.get("early_slot"))
+
+    if data.get("ultra") or data.get("plan") == "ultra":
+        return PlanInfo(
+            plan="ultra",
+            active=True,
+            label="Ultra Premium",
+            trial_ends=None,
+            early_slot=early_slot,
+            slots_used=slots_used,
+        )
+
+    if data.get("premium") or data.get("plan") == "premium":
         return PlanInfo(
             plan="premium",
             active=True,
             label="Premium",
             trial_ends=None,
-            early_slot=bool(data.get("early_slot")),
+            early_slot=early_slot,
             slots_used=slots_used,
         )
 
@@ -65,7 +80,7 @@ def get_plan_info(guild_id: int) -> PlanInfo:
             active=True,
             label="Demo / Trial",
             trial_ends=ends.date().isoformat(),
-            early_slot=bool(data.get("early_slot")),
+            early_slot=early_slot,
             slots_used=slots_used,
         )
 
@@ -74,21 +89,28 @@ def get_plan_info(guild_id: int) -> PlanInfo:
         active=False,
         label="Free",
         trial_ends=data.get("trial_ends"),
-        early_slot=bool(data.get("early_slot")),
+        early_slot=early_slot,
         slots_used=slots_used,
     )
 
 
 def has_premium_features(guild_id: int | None) -> bool:
+    """Premium, Ultra, or active demo trial."""
     if guild_id is None:
         return False
     return get_plan_info(guild_id).active
 
 
+def has_ultra_features(guild_id: int | None) -> bool:
+    if guild_id is None:
+        return False
+    return get_plan_info(guild_id).plan == "ultra"
+
+
 def ensure_early_trial(guild_id: int) -> PlanInfo:
-    """Grant 3-month demo to first N servers that install the bot."""
+    """Grant 3-month Premium demo to first N servers that install the bot."""
     info = get_plan_info(guild_id)
-    if info.plan in {"premium", "trial"} and info.active:
+    if info.plan in {"premium", "ultra", "trial"} and info.active:
         return info
 
     data = settings_store.get_guild_plan(guild_id)
@@ -111,13 +133,23 @@ def ensure_early_trial(guild_id: int) -> PlanInfo:
 
 
 def user_rate_limit(guild_id: int | None) -> int:
-    if guild_id is not None and has_premium_features(guild_id):
+    if guild_id is None:
+        return FREE_USER_RPM
+    info = get_plan_info(guild_id)
+    if info.plan == "ultra":
+        return ULTRA_USER_RPM
+    if info.active:
         return PREMIUM_USER_RPM
     return FREE_USER_RPM
 
 
 def guild_daily_limit(guild_id: int | None) -> int:
-    if guild_id is not None and has_premium_features(guild_id):
+    if guild_id is None:
+        return FREE_GUILD_DAILY
+    info = get_plan_info(guild_id)
+    if info.plan == "ultra":
+        return ULTRA_GUILD_DAILY
+    if info.active:
         return PREMIUM_GUILD_DAILY
     return FREE_GUILD_DAILY
 
@@ -149,5 +181,12 @@ PREMIUM_FEATURES = [
     "Auto-chat: questions / almost all",
     f"{PREMIUM_USER_RPM} AI requests / 10 min per user",
     f"{PREMIUM_GUILD_DAILY} AI requests / day per server",
-    "Priority for heavier usage",
+]
+
+ULTRA_FEATURES = [
+    "Everything in Premium",
+    "Built for servers with thousands of members",
+    f"{ULTRA_USER_RPM} AI requests / 10 min per user",
+    f"{ULTRA_GUILD_DAILY} AI requests / day per server",
+    "Best for large communities & heavy auto-chat",
 ]

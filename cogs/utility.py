@@ -70,8 +70,9 @@ HELP_TEXT = """**Veritas — commands**
 • `/skip` `/queue` `/pause` `/resume` `/nowplaying` `/stop`
 
 **Limits (budget plan)**
-• Free: 2 AI requests per user / 10 minutes, 15 / day per server
-• Premium: 8 AI requests per user / 10 minutes, 80 / day per server
+• Free: 2 AI / 10 min per user, 15 / day per server
+• Premium: 8 AI / 10 min per user, 80 / day per server
+• Ultra Premium: 20 AI / 10 min per user, 500 / day per server (huge servers)
 • Repeated questions may use cache
 """
 

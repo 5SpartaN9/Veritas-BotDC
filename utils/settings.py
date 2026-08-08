@@ -108,6 +108,7 @@ class SettingsStore:
         guild_id: int,
         enabled: bool,
         *,
+        ultra: bool = False,
         stripe_customer_id: str | None = None,
         stripe_subscription_id: str | None = None,
     ) -> None:
@@ -115,6 +116,12 @@ class SettingsStore:
             self._load()
             guild = self._data["guilds"].setdefault(str(guild_id), {})
             guild["premium"] = enabled
+            guild["ultra"] = bool(enabled and ultra)
+            if enabled:
+                guild["plan"] = "ultra" if ultra else "premium"
+            else:
+                guild["plan"] = "free"
+                guild["ultra"] = False
             if stripe_customer_id is not None:
                 guild["stripe_customer_id"] = stripe_customer_id
             if stripe_subscription_id is not None:

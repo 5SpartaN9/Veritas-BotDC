@@ -4,12 +4,12 @@
 <section class="hero-panel">
   <div>
     <h1>Your servers</h1>
-    <p>Configure language, auto-chat, and watchlist — Free forever, Premium when you need more.</p>
+    <p>Free · Premium · Ultra Premium for large communities.</p>
   </div>
   <a class="btn" href="{{ invite_url }}" target="_blank" rel="noreferrer">Add Veritas</a>
 </section>
 
-<section class="plans-grid">
+<section class="plans-grid three">
   <article class="plan-card">
     <h2>Free</h2>
     <p class="plan-price">$0</p>
@@ -20,14 +20,24 @@
     </ul>
   </article>
   <article class="plan-card accent">
-    <h2>Premium / Demo</h2>
-    <p class="plan-price">Demo · 3 months</p>
+    <h2>Premium</h2>
+    <p class="plan-price">{{ premium_price }}</p>
     <p class="plan-note">
-      First {{ early_slots_limit }} servers get a full Premium demo
+      First {{ early_slots_limit }} servers get a 3-month Premium demo
       ({{ early_slots_used }}/{{ early_slots_limit }} used).
     </p>
     <ul>
       {% for item in premium_features %}
+      <li>{{ item }}</li>
+      {% endfor %}
+    </ul>
+  </article>
+  <article class="plan-card ultra">
+    <h2>Ultra Premium</h2>
+    <p class="plan-price">{{ ultra_price }}</p>
+    <p class="plan-note">For servers with thousands of members.</p>
+    <ul>
+      {% for item in ultra_features %}
       <li>{{ item }}</li>
       {% endfor %}
     </ul>
@@ -61,7 +71,9 @@
       <span>
         {% if guild.bot_in_guild %}Bot installed{% else %}Invite needed{% endif %}
         ·
-        {% if guild.plan == "premium" %}
+        {% if guild.plan == "ultra" %}
+          Ultra Premium
+        {% elif guild.plan == "premium" %}
           Premium
         {% elif guild.plan == "trial" %}
           Demo until {{ guild.trial_ends }}

@@ -16,6 +16,7 @@ if str(ROOT) not in sys.path:
 from utils.plans import (
     FREE_FEATURES,
     PREMIUM_FEATURES,
+    ULTRA_FEATURES,
     autochat_mode_allowed,
     ensure_early_trial,
     get_plan_info,
@@ -33,6 +34,7 @@ from web.config import (
     PAYPAL_ME_URL,
     PREMIUM_PRICE_LABEL,
     SESSION_SECRET,
+    ULTRA_PRICE_LABEL,
     WEB_HOST,
     WEB_PORT,
 )
@@ -163,6 +165,9 @@ async def dashboard(request: Request):
             "early_slots_limit": EARLY_TRIAL_LIMIT,
             "free_features": FREE_FEATURES,
             "premium_features": PREMIUM_FEATURES,
+            "ultra_features": ULTRA_FEATURES,
+            "premium_price": PREMIUM_PRICE_LABEL,
+            "ultra_price": ULTRA_PRICE_LABEL,
         },
     )
 
@@ -219,17 +224,24 @@ async def guild_dashboard(request: Request, guild_id: str):
             "canceled": request.query_params.get("canceled") == "1",
             "free_features": FREE_FEATURES,
             "premium_features": PREMIUM_FEATURES,
+            "ultra_features": ULTRA_FEATURES,
             "has_premium": plan.active,
             "payments_enabled": PAYMENTS_ENABLED,
             "price_label": PREMIUM_PRICE_LABEL,
+            "ultra_price_label": ULTRA_PRICE_LABEL,
             "paypal_url": PAYPAL_BUTTON_URL or PAYPAL_ME_URL,
-            "is_paid_premium": plan.plan == "premium",
+            "is_paid_premium": plan.plan in {"premium", "ultra"},
+            "is_ultra": plan.plan == "ultra",
         },
     )
 
 
 @app.post("/dashboard/{guild_id}/checkout")
-async def start_checkout(request: Request, guild_id: str):
+async def start_checkout(
+    request: Request,
+    guild_id: str,
+    tier: str = Form("premium"),
+):
     session_data = current_session(request)
     if not session_data or not session_data.get("user"):
         return RedirectResponse("/auth/login", status_code=303)
@@ -238,7 +250,9 @@ async def start_checkout(request: Request, guild_id: str):
     guild = next((g for g in guilds if str(g.get("id")) == guild_id), None)
     if not guild or not _can_manage(guild):
         raise HTTPException(status_code=403, detail="No access")
-    if not stripe_ready():
+    if tier not in {"premium", "ultra"}:
+        tier = "premium"
+    if not stripe_ready(tier):
         raise HTTPException(
             status_code=503,
             detail="Payments are not configured yet. Add Stripe keys to .env",
@@ -251,6 +265,7 @@ async def start_checkout(request: Request, guild_id: str):
             guild_name=str(guild.get("name") or "Server"),
             user_id=str(user.get("id")),
             user_email=user.get("email"),
+            tier=tier,
         )
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Stripe error: {exc}") from exc

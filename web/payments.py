@@ -9,6 +9,7 @@ from utils.settings import settings_store
 from web.config import (
     PUBLIC_BASE_URL,
     STRIPE_PRICE_ID,
+    STRIPE_PRICE_ID_ULTRA,
     STRIPE_SECRET_KEY,
     STRIPE_WEBHOOK_SECRET,
 )
@@ -16,8 +17,12 @@ from web.config import (
 logger = logging.getLogger("veritas.payments")
 
 
-def stripe_ready() -> bool:
-    return bool(STRIPE_SECRET_KEY and STRIPE_PRICE_ID)
+def stripe_ready(tier: str = "premium") -> bool:
+    if not STRIPE_SECRET_KEY:
+        return False
+    if tier == "ultra":
+        return bool(STRIPE_PRICE_ID_ULTRA or STRIPE_PRICE_ID)
+    return bool(STRIPE_PRICE_ID)
 
 
 def create_checkout_session(
@@ -26,18 +31,25 @@ def create_checkout_session(
     guild_name: str,
     user_id: str,
     user_email: str | None = None,
+    tier: str = "premium",
 ) -> str:
-    """Return Stripe Checkout URL for Premium subscription."""
-    if not stripe_ready():
+    """Return Stripe Checkout URL for Premium or Ultra subscription."""
+    if tier not in {"premium", "ultra"}:
+        tier = "premium"
+    if not stripe_ready(tier):
         raise RuntimeError("Stripe is not configured")
 
+    price_id = STRIPE_PRICE_ID_ULTRA if tier == "ultra" and STRIPE_PRICE_ID_ULTRA else STRIPE_PRICE_ID
+    if not price_id:
+        raise RuntimeError("Stripe price is not configured")
+
     stripe.api_key = STRIPE_SECRET_KEY
-    success = f"{PUBLIC_BASE_URL}/dashboard/{guild_id}?paid=1"
+    success = f"{PUBLIC_BASE_URL}/dashboard/{guild_id}?paid=1&tier={tier}"
     cancel = f"{PUBLIC_BASE_URL}/dashboard/{guild_id}?canceled=1"
 
     params: dict[str, Any] = {
         "mode": "subscription",
-        "line_items": [{"price": STRIPE_PRICE_ID, "quantity": 1}],
+        "line_items": [{"price": price_id, "quantity": 1}],
         "success_url": success,
         "cancel_url": cancel,
         "client_reference_id": guild_id,
@@ -45,11 +57,13 @@ def create_checkout_session(
             "guild_id": guild_id,
             "guild_name": guild_name[:80],
             "discord_user_id": user_id,
+            "plan_tier": tier,
         },
         "subscription_data": {
             "metadata": {
                 "guild_id": guild_id,
                 "discord_user_id": user_id,
+                "plan_tier": tier,
             }
         },
         "allow_promotion_codes": True,
@@ -81,7 +95,6 @@ def handle_webhook(payload: bytes, signature: str | None) -> dict[str, str]:
             payload, signature, STRIPE_WEBHOOK_SECRET
         )
     else:
-        # Local/dev only — prefer verifying signatures in production
         import json
 
         event = stripe.Event.construct_from(json.loads(payload), STRIPE_SECRET_KEY)
@@ -98,19 +111,20 @@ def handle_webhook(payload: bytes, signature: str | None) -> dict[str, str]:
         customer_id = data.get("customer")
         sub_id = data.get("subscription") or data.get("id")
         status = data.get("status", "active")
+        tier = _tier_from_object(data)
         if guild_id and status in {"active", "trialing", "complete", None, ""}:
-            # checkout.session.completed has payment_status
             payment_status = data.get("payment_status")
             if payment_status and payment_status not in {"paid", "no_payment_required"}:
                 return {"ok": "ignored_unpaid"}
             settings_store.set_premium(
                 int(guild_id),
                 True,
+                ultra=(tier == "ultra"),
                 stripe_customer_id=str(customer_id) if customer_id else None,
                 stripe_subscription_id=str(sub_id) if sub_id else None,
             )
-            logger.info("Premium ON for guild %s via %s", guild_id, etype)
-            return {"ok": "premium_on", "guild_id": guild_id}
+            logger.info("Plan %s ON for guild %s via %s", tier, guild_id, etype)
+            return {"ok": "premium_on", "guild_id": guild_id, "tier": tier}
 
     if etype in {
         "customer.subscription.deleted",
@@ -131,3 +145,9 @@ def _guild_from_object(data: dict) -> str | None:
     if guild_id:
         return str(guild_id)
     return None
+
+
+def _tier_from_object(data: dict) -> str:
+    meta = data.get("metadata") or {}
+    tier = str(meta.get("plan_tier") or "premium").lower()
+    return "ultra" if tier == "ultra" else "premium"

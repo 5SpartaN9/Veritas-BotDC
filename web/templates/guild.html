@@ -15,7 +15,9 @@
       {% endif %}
     </p>
   </div>
-  {% if plan.plan == "premium" %}
+  {% if plan.plan == "ultra" %}
+  <span class="badge ultra">Ultra Premium</span>
+  {% elif plan.plan == "premium" %}
   <span class="badge">Premium</span>
   {% elif plan.plan == "trial" %}
   <span class="badge trial">Demo · until {{ plan.trial_ends }}</span>
@@ -28,13 +30,13 @@
 <article class="notice ok">Settings saved.</article>
 {% endif %}
 {% if paid %}
-<article class="notice ok">Payment received — Premium unlocks within a minute after Stripe confirms.</article>
+<article class="notice ok">Payment received — your plan unlocks within a minute after Stripe confirms.</article>
 {% endif %}
 {% if canceled %}
 <article class="notice">Checkout canceled. You can try again anytime.</article>
 {% endif %}
 
-<section class="plans-grid compact">
+<section class="plans-grid three compact">
   <article class="plan-card {% if plan.plan == 'free' %}current{% endif %}">
     <h2>Free</h2>
     <p class="plan-price">$0 forever</p>
@@ -44,8 +46,8 @@
       {% endfor %}
     </ul>
   </article>
-  <article class="plan-card accent {% if plan.active %}current{% endif %}">
-    <h2>{% if plan.plan == "premium" %}Premium{% else %}Premium / Demo{% endif %}</h2>
+  <article class="plan-card accent {% if plan.plan in ['premium', 'trial'] %}current{% endif %}">
+    <h2>{% if plan.plan == "trial" %}Premium / Demo{% else %}Premium{% endif %}</h2>
     {% if plan.plan == "trial" %}
     <p class="plan-price">Active demo</p>
     <p class="plan-note">Ends {{ plan.trial_ends }}. After that this server returns to Free unless you upgrade.</p>
@@ -54,10 +56,7 @@
     <p class="plan-note">Paid Premium is enabled for this server.</p>
     {% else %}
     <p class="plan-price">{{ price_label }}</p>
-    <p class="plan-note">
-      Early demo slots: {{ plan.slots_used }}/{{ plan.slots_limit }}.
-      Or upgrade with card / PayPal below.
-    </p>
+    <p class="plan-note">Best for medium servers.</p>
     {% endif %}
     <ul>
       {% for item in premium_features %}
@@ -65,19 +64,43 @@
       {% endfor %}
     </ul>
     <div class="pay-actions">
-      {% if payments_enabled and plan.plan != "premium" %}
+      {% if payments_enabled and plan.plan not in ['premium', 'ultra'] %}
       <form method="post" action="/dashboard/{{ guild.id }}/checkout">
-        <button class="btn" type="submit">Upgrade with Stripe</button>
+        <input type="hidden" name="tier" value="premium" />
+        <button class="btn" type="submit">Get Premium</button>
       </form>
-      {% elif is_paid_premium %}
+      {% endif %}
+      {% if paypal_url and plan.plan not in ['premium', 'ultra'] %}
+      <a class="btn btn-ghost" href="{{ paypal_url }}" target="_blank" rel="noreferrer">PayPal</a>
+      {% endif %}
+    </div>
+  </article>
+  <article class="plan-card ultra {% if plan.plan == 'ultra' %}current{% endif %}">
+    <h2>Ultra Premium</h2>
+    {% if plan.plan == "ultra" %}
+    <p class="plan-price">Active · {{ ultra_price_label }}</p>
+    <p class="plan-note">Highest limits — built for huge servers.</p>
+    {% else %}
+    <p class="plan-price">{{ ultra_price_label }}</p>
+    <p class="plan-note">For communities with thousands of members.</p>
+    {% endif %}
+    <ul>
+      {% for item in ultra_features %}
+      <li>{{ item }}</li>
+      {% endfor %}
+    </ul>
+    <div class="pay-actions">
+      {% if payments_enabled and plan.plan != 'ultra' %}
+      <form method="post" action="/dashboard/{{ guild.id }}/checkout">
+        <input type="hidden" name="tier" value="ultra" />
+        <button class="btn" type="submit">Get Ultra</button>
+      </form>
+      {% elif is_ultra %}
       <form method="post" action="/dashboard/{{ guild.id }}/billing">
         <button class="btn" type="submit">Manage billing</button>
       </form>
       {% elif not payments_enabled %}
-      <p class="plan-note">Stripe not connected yet — owner must add keys in hosting env.</p>
-      {% endif %}
-      {% if paypal_url and plan.plan != "premium" %}
-      <a class="btn btn-ghost" href="{{ paypal_url }}" target="_blank" rel="noreferrer">Pay with PayPal</a>
+      <p class="plan-note">Stripe not connected yet.</p>
       {% endif %}
     </div>
   </article>

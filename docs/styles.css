@@ -292,6 +292,10 @@ code {
   gap: 1.2rem;
 }
 
+.pricing.three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .plan {
   padding: 1.6rem;
   border: 1px solid var(--line);
@@ -301,6 +305,11 @@ code {
 .plan-accent {
   border-color: rgba(126, 200, 195, 0.4);
   background: linear-gradient(180deg, rgba(126, 200, 195, 0.08), rgba(255, 255, 255, 0.02));
+}
+
+.plan-ultra {
+  border-color: rgba(216, 179, 106, 0.5);
+  background: linear-gradient(180deg, rgba(216, 179, 106, 0.1), rgba(255, 255, 255, 0.02));
 }
 
 .plan h3 {
@@ -329,6 +338,11 @@ code {
 .plan-accent .plan-limits {
   border-color: rgba(126, 200, 195, 0.35);
   background: rgba(126, 200, 195, 0.08);
+}
+
+.plan-ultra .plan-limits {
+  border-color: rgba(216, 179, 106, 0.4);
+  background: rgba(216, 179, 106, 0.1);
 }
 
 .plan ul {
@@ -485,7 +499,8 @@ code {
 
   .feature-list,
   .command-grid,
-  .pricing {
+  .pricing,
+  .pricing.three {
     grid-template-columns: 1fr;
   }
 

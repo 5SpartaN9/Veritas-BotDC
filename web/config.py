@@ -29,8 +29,10 @@ PANEL_URL = os.getenv("PANEL_URL", f"{PUBLIC_BASE_URL}/dashboard")
 STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "")
 STRIPE_PUBLISHABLE_KEY = os.getenv("STRIPE_PUBLISHABLE_KEY", "")
 STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")
-STRIPE_PRICE_ID = os.getenv("STRIPE_PRICE_ID", "")  # recurring Price ID from Stripe
+STRIPE_PRICE_ID = os.getenv("STRIPE_PRICE_ID", "")  # Premium recurring Price ID
+STRIPE_PRICE_ID_ULTRA = os.getenv("STRIPE_PRICE_ID_ULTRA", "")  # Ultra recurring Price ID
 PREMIUM_PRICE_LABEL = os.getenv("PREMIUM_PRICE_LABEL", "$4.99 / month")
+ULTRA_PRICE_LABEL = os.getenv("ULTRA_PRICE_LABEL", "$14.99 / month")
 
 # Optional PayPal button / link (PayPal.me or hosted button URL)
 PAYPAL_ME_URL = os.getenv("PAYPAL_ME_URL", "")
