@@ -8,7 +8,7 @@ SETTINGS_PATH = Path(__file__).resolve().parent.parent / "data" / "settings.json
 
 DEFAULT_AUTOCHAT = "mention"
 DEFAULT_LANGUAGE = "auto"
-EARLY_TRIAL_LIMIT_DEFAULT = 100
+EARLY_TRIAL_LIMIT_DEFAULT = 15
 
 
 class SettingsStore:

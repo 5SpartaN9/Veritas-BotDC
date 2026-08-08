@@ -5,13 +5,14 @@ from datetime import datetime, timedelta, timezone
 
 from utils.settings import settings_store
 
-EARLY_TRIAL_LIMIT = 100
+EARLY_TRIAL_LIMIT = 15   # fewer free demos = lower Gemini cost
 EARLY_TRIAL_DAYS = 90
 
-FREE_USER_RPM = 5          # per 10 minutes
-PREMIUM_USER_RPM = 20
-FREE_GUILD_DAILY = 40
-PREMIUM_GUILD_DAILY = 400
+# Budget-friendly limits (Gemini costs money per request)
+FREE_USER_RPM = 2          # per 10 minutes
+PREMIUM_USER_RPM = 8
+FREE_GUILD_DAILY = 15
+PREMIUM_GUILD_DAILY = 80
 
 PREMIUM_COMMANDS = {"debate", "multicheck", "watchcheck"}
 PREMIUM_AUTOCHAT_MODES = {"questions", "all"}

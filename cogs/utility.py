@@ -5,6 +5,7 @@ from discord import app_commands
 from discord.ext import commands
 
 from cogs.music import Music, MusicControlView
+from config import PANEL_URL, SITE_URL
 from utils.history import history_store
 from utils.scores import score_store
 from utils.settings import settings_store
@@ -13,7 +14,9 @@ ABOUT_DESCRIPTION = (
     "**Veritas** is an AI fact-checking bot for Discord.\n\n"
     "It verifies claims and answers questions using **official institutions** "
     "and **scientific sources** — not social media rumors or tabloids.\n\n"
-    "If something can’t be confirmed, it says so instead of guessing."
+    "If something can’t be confirmed, it says so instead of guessing.\n\n"
+    f"🌐 Website: {SITE_URL}\n"
+    f"⚙️ Control panel: {PANEL_URL}"
 )
 
 QUICK_START = (
@@ -66,8 +69,9 @@ HELP_TEXT = """**Veritas — commands**
 • `/music link:` — YouTube / Spotify / track name
 • `/skip` `/queue` `/pause` `/resume` `/nowplaying` `/stop`
 
-**Limits**
-• 5 AI requests per user / 10 minutes
+**Limits (budget plan)**
+• Free: 2 AI requests per user / 10 minutes, 15 / day per server
+• Premium: 8 AI requests per user / 10 minutes, 80 / day per server
 • Repeated questions may use cache
 """
 
@@ -276,6 +280,11 @@ class Utility(commands.Cog):
                 "`/about` `/help` `/ask` `/check` `/debate` `/multicheck`\n"
                 "`/myscore` `/settings` `/watchlist` `/history`"
             ),
+            inline=False,
+        )
+        embed.add_field(
+            name="Web control panel",
+            value=f"[Open dashboard]({PANEL_URL})",
             inline=False,
         )
         view = MusicControlView(music)
