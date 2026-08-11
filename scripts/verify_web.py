@@ -80,6 +80,8 @@ def main() -> None:
         paid=False,
         canceled=False,
         switched_free=False,
+        switched_premium=False,
+        switched_ultra=False,
         switch_error=None,
         free_features=FREE_FEATURES,
         premium_features=PREMIUM_FEATURES,

@@ -137,6 +137,92 @@ def cancel_subscription_to_free(guild_id: int) -> dict[str, str]:
     return {"ok": "free", "guild_id": str(guild_id)}
 
 
+def switch_paid_plan(
+    *,
+    guild_id: int,
+    tier: str,
+    currency: str,
+    guild_name: str,
+    user_id: str,
+    user_email: str | None = None,
+) -> dict[str, str]:
+    """
+    Switch between Premium and Ultra.
+    Prefer updating the existing Stripe subscription; otherwise send Checkout.
+    """
+    if tier not in {"premium", "ultra"}:
+        raise RuntimeError("Can only switch to premium or ultra")
+
+    data = settings_store.get_guild_plan(guild_id)
+    if data.get("lifetime"):
+        raise RuntimeError("Ultra Lifetime cannot be changed")
+
+    cur: Currency = normalize_currency(currency)
+    if not stripe_ready(tier, cur):
+        raise RuntimeError("Stripe is not configured for this plan/currency")
+    price_id = price_id_for(tier, cur)  # type: ignore[arg-type]
+    if not price_id:
+        raise RuntimeError("Stripe price is not configured")
+
+    sub_id = data.get("stripe_subscription_id")
+    if sub_id and STRIPE_SECRET_KEY:
+        stripe.api_key = STRIPE_SECRET_KEY
+        try:
+            sub = stripe.Subscription.retrieve(str(sub_id))
+            items = (sub.get("items") or {}).get("data") or []
+            if not items:
+                raise RuntimeError("Subscription has no items")
+            item_id = items[0]["id"]
+            meta = dict(sub.get("metadata") or {})
+            meta.update(
+                {
+                    "guild_id": str(guild_id),
+                    "plan_tier": tier,
+                    "currency": cur,
+                }
+            )
+            stripe.Subscription.modify(
+                str(sub_id),
+                items=[{"id": item_id, "price": price_id}],
+                metadata=meta,
+                proration_behavior="create_prorations",
+                cancel_at_period_end=False,
+            )
+            settings_store.set_premium(
+                guild_id,
+                True,
+                ultra=(tier == "ultra"),
+                lifetime=False,
+                stripe_subscription_id=str(sub_id),
+            )
+            return {"ok": "switched", "tier": tier, "guild_id": str(guild_id)}
+        except Exception as exc:
+            logger.warning(
+                "In-place switch failed guild=%s sub=%s: %s — falling back to checkout",
+                guild_id,
+                sub_id,
+                exc,
+            )
+            try:
+                stripe.Subscription.cancel(str(sub_id))
+            except Exception:
+                try:
+                    stripe.Subscription.delete(str(sub_id))
+                except Exception:
+                    pass
+            settings_store.clear_plan_to_free(guild_id)
+
+    url = create_checkout_session(
+        guild_id=str(guild_id),
+        guild_name=guild_name,
+        user_id=user_id,
+        user_email=user_email,
+        tier=tier,
+        currency=cur,
+    )
+    return {"ok": "checkout", "tier": tier, "url": url, "guild_id": str(guild_id)}
+
+
 def handle_webhook(payload: bytes, signature: str | None) -> dict[str, str]:
     stripe.api_key = STRIPE_SECRET_KEY
     secret = (STRIPE_WEBHOOK_SECRET or "").strip()

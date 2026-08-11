@@ -42,8 +42,14 @@
 {% if switched_free %}
 <article class="notice ok">This server is now on Free. Paid subscription was canceled if one existed.</article>
 {% endif %}
+{% if switched_premium %}
+<article class="notice ok">Plan switched to Premium.</article>
+{% endif %}
+{% if switched_ultra %}
+<article class="notice ok">Plan switched to Ultra Premium.</article>
+{% endif %}
 {% if switch_error %}
-<article class="notice bad">Could not switch to Free (Lifetime stays forever, or Stripe cancel failed). Try Manage billing.</article>
+<article class="notice bad">Could not change plan (Lifetime stays forever, or Stripe failed). Try Manage billing.</article>
 {% endif %}
 
 <section class="plans-grid three compact">
@@ -97,16 +103,16 @@
       <form method="post" action="/dashboard/{{ guild.id }}/billing">
         <button class="btn btn-ghost" type="submit">Manage billing</button>
       </form>
+      {% elif payments_enabled and plan.plan == 'ultra' and not is_lifetime %}
       <form
         method="post"
-        action="/dashboard/{{ guild.id }}/switch-free"
+        action="/dashboard/{{ guild.id }}/switch-plan"
         class="pay-form"
-        onsubmit="return confirm('Cancel Premium and switch to Free now?');"
+        onsubmit="return confirm('Switch this server from Ultra to Premium now?');"
       >
-        <button class="btn btn-ghost" type="submit">Switch to Free</button>
+        <input type="hidden" name="tier" value="premium" />
+        <button class="btn" type="submit">Switch to Premium · {{ regional_premium_price }}</button>
       </form>
-      {% elif payments_enabled and plan.plan == 'ultra' and not is_lifetime %}
-      <p class="plan-note">To move Ultra → Premium: cancel Ultra first (Switch to Free), then buy Premium.</p>
       {% endif %}
       {% if paypal_url and plan.plan not in ['premium', 'ultra'] %}
       <a class="btn btn-ghost" href="{{ paypal_url }}" target="_blank" rel="noreferrer">PayPal</a>
@@ -142,10 +148,22 @@
     </ul>
     <div class="pay-actions">
       {% if payments_enabled and plan.plan != 'ultra' %}
+      {% if plan.plan == 'premium' and not plan.is_trial %}
+      <form
+        method="post"
+        action="/dashboard/{{ guild.id }}/switch-plan"
+        class="pay-form"
+        onsubmit="return confirm('Switch this server from Premium to Ultra now?');"
+      >
+        <input type="hidden" name="tier" value="ultra" />
+        <button class="btn" type="submit">Switch to Ultra · {{ regional_ultra_price }}</button>
+      </form>
+      {% else %}
       <form method="post" action="/dashboard/{{ guild.id }}/checkout" class="pay-form">
         <input type="hidden" name="tier" value="ultra" />
         <button class="btn" type="submit">Get Ultra · {{ regional_ultra_price }}</button>
       </form>
+      {% endif %}
       <form method="post" action="/dashboard/{{ guild.id }}/checkout" class="pay-form">
         <input type="hidden" name="tier" value="ultra_lifetime" />
         <button class="btn btn-ghost" type="submit">Lifetime · {{ regional_lifetime_price }}</button>
@@ -154,6 +172,15 @@
       <form method="post" action="/dashboard/{{ guild.id }}/checkout" class="pay-form">
         <input type="hidden" name="tier" value="ultra" />
         <button class="btn" type="submit">Keep Ultra · {{ regional_ultra_price }}</button>
+      </form>
+      <form
+        method="post"
+        action="/dashboard/{{ guild.id }}/switch-plan"
+        class="pay-form"
+        onsubmit="return confirm('Switch this demo to paid Premium now?');"
+      >
+        <input type="hidden" name="tier" value="premium" />
+        <button class="btn btn-ghost" type="submit">Switch to Premium · {{ regional_premium_price }}</button>
       </form>
       <form method="post" action="/dashboard/{{ guild.id }}/checkout" class="pay-form">
         <input type="hidden" name="tier" value="ultra_lifetime" />
