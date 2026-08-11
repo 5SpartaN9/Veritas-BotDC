@@ -17,6 +17,7 @@ from web.config import (
     MANAGE_GUILD,
     OAUTH_AUTHORIZE,
     OAUTH_TOKEN,
+    PUBLIC_BASE_URL,
     SESSION_SECRET,
 )
 from web.discord_api import discord_api
@@ -93,12 +94,13 @@ def login_url(state: str) -> str:
 
 
 def _set_session_cookie(response: RedirectResponse, payload: dict[str, Any]) -> None:
+    secure = PUBLIC_BASE_URL.startswith("https://")
     response.set_cookie(
         key=COOKIE_NAME,
         value=dump_user_session(payload),
         httponly=True,
         samesite="lax",
-        secure=False,
+        secure=secure,
         max_age=60 * 60 * 24 * 14,
         path="/",
     )

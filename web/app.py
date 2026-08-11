@@ -57,7 +57,7 @@ app.add_middleware(
     SessionMiddleware,
     secret_key=SESSION_SECRET,
     same_site="lax",
-    https_only=False,
+    https_only=PUBLIC_BASE_URL.startswith("https://"),
     max_age=60 * 60 * 24 * 7,
 )
 app.include_router(auth_router)
@@ -146,16 +146,26 @@ async def dashboard(request: Request):
     if not setup_needed:
         try:
             bot_guild_ids = await fetch_bot_guild_ids()
-            guilds = _managed_guilds(session_data, bot_guild_ids)
-            for g in guilds:
+        except Exception as exc:
+            print(f"[dashboard] bot guild fetch failed: {exc!r}")
+            error = "Could not refresh bot status from Discord (using last known / offline)."
+            bot_guild_ids = set()
+
+        # Always show servers from the login session — never blank the list on API errors.
+        guilds = _managed_guilds(session_data, bot_guild_ids)
+        for g in guilds:
+            try:
                 if g.get("bot_in_guild"):
                     ensure_early_trial(int(g["id"]))
                 info = get_plan_info(int(g["id"]))
                 g["plan"] = info.plan
                 g["plan_label"] = info.label
                 g["trial_ends"] = info.trial_ends
-        except Exception as exc:
-            error = str(exc)
+            except Exception as exc:
+                print(f"[dashboard] plan load failed for {g.get('id')}: {exc!r}")
+                g["plan"] = "free"
+                g["plan_label"] = "Free"
+                g["trial_ends"] = None
 
     slots_used = settings_store.count_early_trials()
     ultra_slots_used = settings_store.count_early_ultra_trials()
