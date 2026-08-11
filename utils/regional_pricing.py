@@ -59,6 +59,15 @@ REGIONS: dict[str, RegionPrice] = {
     "GR": RegionPrice("GR", "Greece", "EUR", "€", 0.75, 0.92),
     "TR": RegionPrice("TR", "Türkiye", "TRY", "₺", 0.55, 34.0),
     "UA": RegionPrice("UA", "Ukraine", "UAH", "₴", 0.50, 41.0),
+    "RU": RegionPrice("RU", "Russia", "RUB", "₽", 0.52, 92.0),
+    "CN": RegionPrice("CN", "China", "CNY", "¥", 0.55, 7.25),
+    "TW": RegionPrice("TW", "Taiwan", "TWD", "NT$", 0.75, 32.0),
+    "HK": RegionPrice("HK", "Hong Kong", "HKD", "HK$", 0.90, 7.8),
+    "IR": RegionPrice("IR", "Iran", "IRR", "﷼", 0.48, 42000.0),
+    "SA": RegionPrice("SA", "Saudi Arabia", "SAR", "SAR", 0.70, 3.75),
+    "IL": RegionPrice("IL", "Israel", "ILS", "₪", 0.90, 3.7),
+    "KZ": RegionPrice("KZ", "Kazakhstan", "KZT", "₸", 0.48, 480.0),
+    "PK": RegionPrice("PK", "Pakistan", "PKR", "Rs", 0.48, 278.0),
     "BR": RegionPrice("BR", "Brazil", "BRL", "R$", 0.58, 5.5),
     "MX": RegionPrice("MX", "Mexico", "MXN", "MX$", 0.55, 17.5),
     "AR": RegionPrice("AR", "Argentina", "ARS", "AR$", 0.50, 950.0),
@@ -96,7 +105,7 @@ def get_region(code: str | None) -> RegionPrice:
 
 def _nice_round(amount: float, currency: str) -> float:
     """Round to familiar retail endings for the currency."""
-    if currency in {"JPY", "KRW", "VND", "IDR", "HUF", "CLP", "ARS", "NGN"}:
+    if currency in {"JPY", "KRW", "VND", "IDR", "HUF", "CLP", "ARS", "NGN", "IRR", "KZT", "PKR"}:
         if amount >= 10000:
             return float(int(round(amount / 1000) * 1000))
         if amount >= 1000:
@@ -120,7 +129,7 @@ def local_amount(base_usd: float, region: RegionPrice) -> float:
 
 def format_money(amount: float, region: RegionPrice) -> str:
     currency = region.currency
-    if currency in {"JPY", "KRW", "VND", "IDR", "HUF", "CLP", "ARS", "NGN"}:
+    if currency in {"JPY", "KRW", "VND", "IDR", "HUF", "CLP", "ARS", "NGN", "IRR", "KZT", "PKR"}:
         n = f"{int(amount):,}".replace(",", " ")
         if currency == "JPY":
             return f"¥{n}"
@@ -136,6 +145,12 @@ def format_money(amount: float, region: RegionPrice) -> str:
             return f"CLP {n}"
         if currency == "ARS":
             return f"AR$ {n}"
+        if currency == "IRR":
+            return f"{n} ﷼"
+        if currency == "KZT":
+            return f"{n} ₸"
+        if currency == "PKR":
+            return f"Rs {n}"
         return f"₦{n}"
 
     if currency == "PLN":
@@ -146,6 +161,18 @@ def format_money(amount: float, region: RegionPrice) -> str:
         return f"£{amount:.2f}"
     if currency == "USD":
         return f"${amount:.2f}"
+    if currency == "RUB":
+        return f"{amount:.0f} ₽"
+    if currency == "CNY":
+        return f"¥{amount:.2f}"
+    if currency == "ILS":
+        return f"₪{amount:.2f}"
+    if currency == "SAR":
+        return f"{amount:.2f} SAR"
+    if currency == "TWD":
+        return f"NT${amount:.0f}"
+    if currency == "HKD":
+        return f"HK${amount:.2f}"
     if region.symbol in {"$", "C$", "A$", "NZ$", "MX$", "S$", "R$"}:
         return f"{region.symbol}{amount:.2f}"
     return f"{amount:.2f} {region.symbol}"

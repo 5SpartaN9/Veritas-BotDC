@@ -67,6 +67,15 @@ const REGIONS = {
   GR: { name: "Greece", currency: "EUR", symbol: "€", factor: 0.75, fx: 0.92 },
   TR: { name: "Türkiye", currency: "TRY", symbol: "₺", factor: 0.55, fx: 34 },
   UA: { name: "Ukraine", currency: "UAH", symbol: "₴", factor: 0.5, fx: 41 },
+  RU: { name: "Russia", currency: "RUB", symbol: "₽", factor: 0.52, fx: 92 },
+  CN: { name: "China", currency: "CNY", symbol: "¥", factor: 0.55, fx: 7.25 },
+  TW: { name: "Taiwan", currency: "TWD", symbol: "NT$", factor: 0.75, fx: 32 },
+  HK: { name: "Hong Kong", currency: "HKD", symbol: "HK$", factor: 0.9, fx: 7.8 },
+  IR: { name: "Iran", currency: "IRR", symbol: "﷼", factor: 0.48, fx: 42000 },
+  SA: { name: "Saudi Arabia", currency: "SAR", symbol: "SAR", factor: 0.7, fx: 3.75 },
+  IL: { name: "Israel", currency: "ILS", symbol: "₪", factor: 0.9, fx: 3.7 },
+  KZ: { name: "Kazakhstan", currency: "KZT", symbol: "₸", factor: 0.48, fx: 480 },
+  PK: { name: "Pakistan", currency: "PKR", symbol: "Rs", factor: 0.48, fx: 278 },
   BR: { name: "Brazil", currency: "BRL", symbol: "R$", factor: 0.58, fx: 5.5 },
   MX: { name: "Mexico", currency: "MXN", symbol: "MX$", factor: 0.55, fx: 17.5 },
   AR: { name: "Argentina", currency: "ARS", symbol: "AR$", factor: 0.5, fx: 950 },
@@ -82,7 +91,7 @@ const REGIONS = {
   EG: { name: "Egypt", currency: "EGP", symbol: "E£", factor: 0.48, fx: 48 },
 };
 
-const ZERO_DECIMAL = new Set(["JPY", "KRW", "VND", "IDR", "HUF", "CLP", "ARS", "NGN"]);
+const ZERO_DECIMAL = new Set(["JPY", "KRW", "VND", "IDR", "HUF", "CLP", "ARS", "NGN", "IRR", "KZT", "PKR"]);
 
 function niceRound(amount, currency) {
   if (ZERO_DECIMAL.has(currency)) {
@@ -108,6 +117,9 @@ function formatMoney(amount, region) {
     if (currency === "HUF") return `${n} Ft`;
     if (currency === "CLP") return `CLP ${n}`;
     if (currency === "ARS") return `AR$ ${n}`;
+    if (currency === "IRR") return `${n} ﷼`;
+    if (currency === "KZT") return `${n} ₸`;
+    if (currency === "PKR") return `Rs ${n}`;
     return `₦${n}`;
   }
   const fixed = amount.toFixed(2);
@@ -115,6 +127,12 @@ function formatMoney(amount, region) {
   if (currency === "EUR") return `€${fixed}`;
   if (currency === "GBP") return `£${fixed}`;
   if (currency === "USD") return `$${fixed}`;
+  if (currency === "RUB") return `${Math.round(amount)} ₽`;
+  if (currency === "CNY") return `¥${fixed}`;
+  if (currency === "ILS") return `₪${fixed}`;
+  if (currency === "SAR") return `${fixed} SAR`;
+  if (currency === "TWD") return `NT$${Math.round(amount)}`;
+  if (currency === "HKD") return `HK$${fixed}`;
   if (["$", "C$", "A$", "NZ$", "MX$", "S$", "R$"].includes(symbol)) {
     return `${symbol}${fixed}`;
   }
@@ -131,7 +149,27 @@ function guessRegionCode() {
   const parts = lang.split("-");
   const region = parts[1] || parts[0];
   if (REGIONS[region]) return region;
-  const byLang = { PL: "PL", DE: "DE", FR: "FR", ES: "ES", PT: "PT", IT: "IT", JA: "JP", KO: "KR", UK: "UA", RU: "UA", TR: "TR", HI: "IN", TH: "TH", VI: "VN", ID: "ID", AR: "EG" };
+  const byLang = {
+    PL: "PL",
+    DE: "DE",
+    FR: "FR",
+    ES: "ES",
+    PT: "PT",
+    IT: "IT",
+    JA: "JP",
+    KO: "KR",
+    UK: "UA",
+    RU: "RU",
+    ZH: "CN",
+    FA: "IR",
+    TR: "TR",
+    HI: "IN",
+    TH: "TH",
+    VI: "VN",
+    ID: "ID",
+    AR: "EG",
+    HE: "IL",
+  };
   if (byLang[parts[0]]) return byLang[parts[0]];
   return "US";
 }
