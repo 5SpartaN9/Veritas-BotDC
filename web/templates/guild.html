@@ -16,7 +16,7 @@
     </p>
   </div>
   {% if plan.plan == "ultra" %}
-  <span class="badge ultra">Ultra Premium</span>
+  <span class="badge ultra">{% if is_lifetime %}Ultra Lifetime{% else %}Ultra Premium{% endif %}</span>
   {% elif plan.plan == "premium" %}
   <span class="badge">Premium</span>
   {% elif plan.plan == "trial" %}
@@ -76,13 +76,16 @@
     </div>
   </article>
   <article class="plan-card ultra {% if plan.plan == 'ultra' %}current{% endif %}">
-    <h2>Ultra Premium</h2>
-    {% if plan.plan == "ultra" %}
+    <h2>{% if is_lifetime %}Ultra Lifetime{% else %}Ultra Premium{% endif %}</h2>
+    {% if plan.plan == "ultra" and is_lifetime %}
+    <p class="plan-price">Active · forever</p>
+    <p class="plan-note">One-time purchase — Ultra stays on forever for this server.</p>
+    {% elif plan.plan == "ultra" %}
     <p class="plan-price">Active · {{ ultra_price_label }}</p>
-    <p class="plan-note">Highest limits — built for huge servers.</p>
+    <p class="plan-note">Highest limits — built for huge servers. Or buy Lifetime: {{ lifetime_price_label }}.</p>
     {% else %}
     <p class="plan-price">{{ ultra_price_label }}</p>
-    <p class="plan-note">For communities with thousands of members.</p>
+    <p class="plan-note">Monthly, or {{ lifetime_price_label }}. Prices adjust by country at checkout.</p>
     {% endif %}
     <ul>
       {% for item in ultra_features %}
@@ -93,11 +96,19 @@
       {% if payments_enabled and plan.plan != 'ultra' %}
       <form method="post" action="/dashboard/{{ guild.id }}/checkout">
         <input type="hidden" name="tier" value="ultra" />
-        <button class="btn" type="submit">Get Ultra</button>
+        <button class="btn" type="submit">Get Ultra / mo</button>
       </form>
-      {% elif is_ultra %}
+      <form method="post" action="/dashboard/{{ guild.id }}/checkout">
+        <input type="hidden" name="tier" value="ultra_lifetime" />
+        <button class="btn btn-ghost" type="submit">Ultra Lifetime</button>
+      </form>
+      {% elif is_ultra and not is_lifetime %}
       <form method="post" action="/dashboard/{{ guild.id }}/billing">
         <button class="btn" type="submit">Manage billing</button>
+      </form>
+      <form method="post" action="/dashboard/{{ guild.id }}/checkout">
+        <input type="hidden" name="tier" value="ultra_lifetime" />
+        <button class="btn btn-ghost" type="submit">Switch to Lifetime</button>
       </form>
       {% elif not payments_enabled %}
       <p class="plan-note">Stripe not connected yet.</p>

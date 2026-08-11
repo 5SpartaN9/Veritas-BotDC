@@ -31,8 +31,14 @@ STRIPE_PUBLISHABLE_KEY = os.getenv("STRIPE_PUBLISHABLE_KEY", "")
 STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")
 STRIPE_PRICE_ID = os.getenv("STRIPE_PRICE_ID", "")  # Premium recurring Price ID
 STRIPE_PRICE_ID_ULTRA = os.getenv("STRIPE_PRICE_ID_ULTRA", "")  # Ultra recurring Price ID
+STRIPE_PRICE_ID_ULTRA_LIFETIME = os.getenv(
+    "STRIPE_PRICE_ID_ULTRA_LIFETIME", ""
+)  # Ultra one-time Price ID (~$60 US reference)
 PREMIUM_PRICE_LABEL = os.getenv("PREMIUM_PRICE_LABEL", "$4.99 / month")
 ULTRA_PRICE_LABEL = os.getenv("ULTRA_PRICE_LABEL", "$14.99 / month")
+ULTRA_LIFETIME_PRICE_LABEL = os.getenv(
+    "ULTRA_LIFETIME_PRICE_LABEL", "$60 once · forever"
+)
 
 # Optional PayPal button / link (PayPal.me or hosted button URL)
 PAYPAL_ME_URL = os.getenv("PAYPAL_ME_URL", "")

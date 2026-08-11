@@ -34,6 +34,7 @@ from web.config import (
     PAYPAL_ME_URL,
     PREMIUM_PRICE_LABEL,
     SESSION_SECRET,
+    ULTRA_LIFETIME_PRICE_LABEL,
     ULTRA_PRICE_LABEL,
     WEB_HOST,
     WEB_PORT,
@@ -168,6 +169,7 @@ async def dashboard(request: Request):
             "ultra_features": ULTRA_FEATURES,
             "premium_price": PREMIUM_PRICE_LABEL,
             "ultra_price": ULTRA_PRICE_LABEL,
+            "lifetime_price": ULTRA_LIFETIME_PRICE_LABEL,
         },
     )
 
@@ -196,6 +198,7 @@ async def guild_dashboard(request: Request, guild_id: str):
             channels = []
 
     language = settings_store.get_language(int(guild_id))
+    guild_plan_data = settings_store.get_guild_plan(int(guild_id))
     channel_settings = []
     for ch in channels:
         cid = int(ch["id"])
@@ -229,9 +232,11 @@ async def guild_dashboard(request: Request, guild_id: str):
             "payments_enabled": PAYMENTS_ENABLED,
             "price_label": PREMIUM_PRICE_LABEL,
             "ultra_price_label": ULTRA_PRICE_LABEL,
+            "lifetime_price_label": ULTRA_LIFETIME_PRICE_LABEL,
             "paypal_url": PAYPAL_BUTTON_URL or PAYPAL_ME_URL,
             "is_paid_premium": plan.plan in {"premium", "ultra"},
             "is_ultra": plan.plan == "ultra",
+            "is_lifetime": bool(guild_plan_data.get("lifetime")),
         },
     )
 
@@ -250,7 +255,7 @@ async def start_checkout(
     guild = next((g for g in guilds if str(g.get("id")) == guild_id), None)
     if not guild or not _can_manage(guild):
         raise HTTPException(status_code=403, detail="No access")
-    if tier not in {"premium", "ultra"}:
+    if tier not in {"premium", "ultra", "ultra_lifetime"}:
         tier = "premium"
     if not stripe_ready(tier):
         raise HTTPException(

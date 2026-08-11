@@ -53,11 +53,12 @@ def get_plan_info(guild_id: int) -> PlanInfo:
     slots_used = settings_store.count_early_trials()
     early_slot = bool(data.get("early_slot"))
 
-    if data.get("ultra") or data.get("plan") == "ultra":
+    if data.get("ultra") or data.get("plan") == "ultra" or data.get("lifetime"):
+        label = "Ultra Lifetime" if data.get("lifetime") else "Ultra Premium"
         return PlanInfo(
             plan="ultra",
             active=True,
-            label="Ultra Premium",
+            label=label,
             trial_ends=None,
             early_slot=early_slot,
             slots_used=slots_used,
@@ -189,4 +190,5 @@ ULTRA_FEATURES = [
     f"{ULTRA_USER_RPM} AI requests / 10 min per user",
     f"{ULTRA_GUILD_DAILY} AI requests / day per server",
     "Best for large communities & heavy auto-chat",
+    "Optional Ultra Lifetime — pay once, keep forever",
 ]

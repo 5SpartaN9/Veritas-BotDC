@@ -4,7 +4,7 @@
 <section class="hero-panel">
   <div>
     <h1>Your servers</h1>
-    <p>Free · Premium · Ultra Premium for large communities.</p>
+    <p>Free · Premium · Ultra · Ultra Lifetime. Prices vary by country income.</p>
   </div>
   <a class="btn" href="{{ invite_url }}" target="_blank" rel="noreferrer">Add Veritas</a>
 </section>
@@ -24,7 +24,7 @@
     <p class="plan-price">{{ premium_price }}</p>
     <p class="plan-note">
       First {{ early_slots_limit }} servers get a 3-month Premium demo
-      ({{ early_slots_used }}/{{ early_slots_limit }} used).
+      ({{ early_slots_used }}/{{ early_slots_limit }} used). Regional pricing at checkout.
     </p>
     <ul>
       {% for item in premium_features %}
@@ -35,7 +35,7 @@
   <article class="plan-card ultra">
     <h2>Ultra Premium</h2>
     <p class="plan-price">{{ ultra_price }}</p>
-    <p class="plan-note">For servers with thousands of members.</p>
+    <p class="plan-note">Or {{ lifetime_price }} — forever access. For huge servers.</p>
     <ul>
       {% for item in ultra_features %}
       <li>{{ item }}</li>

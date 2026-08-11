@@ -10,16 +10,21 @@ from web.config import (
     PUBLIC_BASE_URL,
     STRIPE_PRICE_ID,
     STRIPE_PRICE_ID_ULTRA,
+    STRIPE_PRICE_ID_ULTRA_LIFETIME,
     STRIPE_SECRET_KEY,
     STRIPE_WEBHOOK_SECRET,
 )
 
 logger = logging.getLogger("veritas.payments")
 
+VALID_TIERS = {"premium", "ultra", "ultra_lifetime"}
+
 
 def stripe_ready(tier: str = "premium") -> bool:
     if not STRIPE_SECRET_KEY:
         return False
+    if tier == "ultra_lifetime":
+        return bool(STRIPE_PRICE_ID_ULTRA_LIFETIME)
     if tier == "ultra":
         return bool(STRIPE_PRICE_ID_ULTRA or STRIPE_PRICE_ID)
     return bool(STRIPE_PRICE_ID)
@@ -33,13 +38,24 @@ def create_checkout_session(
     user_email: str | None = None,
     tier: str = "premium",
 ) -> str:
-    """Return Stripe Checkout URL for Premium or Ultra subscription."""
-    if tier not in {"premium", "ultra"}:
+    """Return Stripe Checkout URL for Premium, Ultra, or Ultra Lifetime."""
+    if tier not in VALID_TIERS:
         tier = "premium"
     if not stripe_ready(tier):
         raise RuntimeError("Stripe is not configured")
 
-    price_id = STRIPE_PRICE_ID_ULTRA if tier == "ultra" and STRIPE_PRICE_ID_ULTRA else STRIPE_PRICE_ID
+    if tier == "ultra_lifetime":
+        price_id = STRIPE_PRICE_ID_ULTRA_LIFETIME
+        mode = "payment"
+    elif tier == "ultra" and STRIPE_PRICE_ID_ULTRA:
+        price_id = STRIPE_PRICE_ID_ULTRA
+        mode = "subscription"
+    else:
+        price_id = STRIPE_PRICE_ID
+        mode = "subscription"
+        if tier == "ultra" and not STRIPE_PRICE_ID_ULTRA:
+            tier = "premium"
+
     if not price_id:
         raise RuntimeError("Stripe price is not configured")
 
@@ -47,27 +63,38 @@ def create_checkout_session(
     success = f"{PUBLIC_BASE_URL}/dashboard/{guild_id}?paid=1&tier={tier}"
     cancel = f"{PUBLIC_BASE_URL}/dashboard/{guild_id}?canceled=1"
 
+    meta = {
+        "guild_id": guild_id,
+        "guild_name": guild_name[:80],
+        "discord_user_id": user_id,
+        "plan_tier": tier,
+    }
+
     params: dict[str, Any] = {
-        "mode": "subscription",
+        "mode": mode,
         "line_items": [{"price": price_id, "quantity": 1}],
         "success_url": success,
         "cancel_url": cancel,
         "client_reference_id": guild_id,
-        "metadata": {
-            "guild_id": guild_id,
-            "guild_name": guild_name[:80],
-            "discord_user_id": user_id,
-            "plan_tier": tier,
-        },
-        "subscription_data": {
+        "metadata": meta,
+        "allow_promotion_codes": True,
+    }
+    if mode == "subscription":
+        params["subscription_data"] = {
             "metadata": {
                 "guild_id": guild_id,
                 "discord_user_id": user_id,
                 "plan_tier": tier,
             }
-        },
-        "allow_promotion_codes": True,
-    }
+        }
+    else:
+        params["payment_intent_data"] = {
+            "metadata": {
+                "guild_id": guild_id,
+                "discord_user_id": user_id,
+                "plan_tier": tier,
+            }
+        }
     if user_email:
         params["customer_email"] = user_email
 
@@ -116,12 +143,16 @@ def handle_webhook(payload: bytes, signature: str | None) -> dict[str, str]:
             payment_status = data.get("payment_status")
             if payment_status and payment_status not in {"paid", "no_payment_required"}:
                 return {"ok": "ignored_unpaid"}
+            lifetime = tier == "ultra_lifetime"
             settings_store.set_premium(
                 int(guild_id),
                 True,
-                ultra=(tier == "ultra"),
+                ultra=(tier in {"ultra", "ultra_lifetime"}),
+                lifetime=lifetime,
                 stripe_customer_id=str(customer_id) if customer_id else None,
-                stripe_subscription_id=str(sub_id) if sub_id else None,
+                stripe_subscription_id=(
+                    None if lifetime else (str(sub_id) if sub_id else None)
+                ),
             )
             logger.info("Plan %s ON for guild %s via %s", tier, guild_id, etype)
             return {"ok": "premium_on", "guild_id": guild_id, "tier": tier}
@@ -132,8 +163,9 @@ def handle_webhook(payload: bytes, signature: str | None) -> dict[str, str]:
     }:
         guild_id = _guild_from_object(data)
         if etype == "customer.subscription.deleted" and guild_id:
+            # Lifetime purchases are protected inside set_premium
             settings_store.set_premium(int(guild_id), False)
-            logger.info("Premium OFF for guild %s", guild_id)
+            logger.info("Premium OFF for guild %s (if not lifetime)", guild_id)
             return {"ok": "premium_off", "guild_id": guild_id}
 
     return {"ok": "ignored", "type": etype}
@@ -150,4 +182,8 @@ def _guild_from_object(data: dict) -> str | None:
 def _tier_from_object(data: dict) -> str:
     meta = data.get("metadata") or {}
     tier = str(meta.get("plan_tier") or "premium").lower()
-    return "ultra" if tier == "ultra" else "premium"
+    if tier in {"ultra_lifetime", "lifetime", "ultra-lifetime"}:
+        return "ultra_lifetime"
+    if tier == "ultra":
+        return "ultra"
+    return "premium"

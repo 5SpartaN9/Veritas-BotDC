@@ -111,19 +111,31 @@ class SettingsStore:
         enabled: bool,
         *,
         ultra: bool = False,
+        lifetime: bool = False,
         stripe_customer_id: str | None = None,
         stripe_subscription_id: str | None = None,
     ) -> None:
         with self._lock:
             self._load()
             guild = self._data["guilds"].setdefault(str(guild_id), {})
+            if not enabled and guild.get("lifetime"):
+                # One-time Ultra Lifetime must not be revoked by subscription cancel
+                return
             guild["premium"] = enabled
             guild["ultra"] = bool(enabled and ultra)
-            if enabled:
+            if enabled and lifetime:
+                guild["lifetime"] = True
+                guild["ultra"] = True
+                guild["premium"] = True
+                guild["plan"] = "ultra"
+            elif enabled:
                 guild["plan"] = "ultra" if ultra else "premium"
+                if not ultra:
+                    guild.pop("lifetime", None)
             else:
                 guild["plan"] = "free"
                 guild["ultra"] = False
+                guild.pop("lifetime", None)
             if stripe_customer_id is not None:
                 guild["stripe_customer_id"] = stripe_customer_id
             if stripe_subscription_id is not None:
