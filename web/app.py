@@ -151,7 +151,8 @@ async def dashboard(request: Request):
             error = str(exc)
 
     slots_used = settings_store.count_early_trials()
-    from utils.plans import EARLY_TRIAL_LIMIT
+    ultra_slots_used = settings_store.count_early_ultra_trials()
+    from utils.plans import EARLY_TRIAL_LIMIT, EARLY_ULTRA_TRIAL_LIMIT
 
     return templates.TemplateResponse(
         request,
@@ -164,6 +165,8 @@ async def dashboard(request: Request):
             "error": error,
             "early_slots_used": slots_used,
             "early_slots_limit": EARLY_TRIAL_LIMIT,
+            "ultra_slots_used": ultra_slots_used,
+            "ultra_slots_limit": EARLY_ULTRA_TRIAL_LIMIT,
             "free_features": FREE_FEATURES,
             "premium_features": PREMIUM_FEATURES,
             "ultra_features": ULTRA_FEATURES,

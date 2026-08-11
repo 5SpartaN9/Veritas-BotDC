@@ -5,17 +5,18 @@ from datetime import datetime, timedelta, timezone
 
 from utils.settings import settings_store
 
-EARLY_TRIAL_LIMIT = 15   # fewer free demos = lower Gemini cost
+EARLY_TRIAL_LIMIT = 15  # Premium demo slots
+EARLY_ULTRA_TRIAL_LIMIT = 10  # Ultra demo slots (separate)
 EARLY_TRIAL_DAYS = 90
 
 # Budget-friendly limits (Gemini costs money per request)
-FREE_USER_RPM = 2          # per 10 minutes
+FREE_USER_RPM = 2  # per 10 minutes
 PREMIUM_USER_RPM = 8
 ULTRA_USER_RPM = 20
 
 FREE_GUILD_DAILY = 15
 PREMIUM_GUILD_DAILY = 80
-ULTRA_GUILD_DAILY = 500    # big servers (thousands of members)
+ULTRA_GUILD_DAILY = 500  # big servers (thousands of members)
 
 PREMIUM_COMMANDS = {"debate", "multicheck", "watchcheck"}
 PREMIUM_AUTOCHAT_MODES = {"questions", "all"}
@@ -28,8 +29,12 @@ class PlanInfo:
     label: str
     trial_ends: str | None = None
     early_slot: bool = False
+    early_ultra_slot: bool = False
     slots_used: int = 0
     slots_limit: int = EARLY_TRIAL_LIMIT
+    ultra_slots_used: int = 0
+    ultra_slots_limit: int = EARLY_ULTRA_TRIAL_LIMIT
+    is_trial: bool = False
 
 
 def _now() -> datetime:
@@ -48,20 +53,53 @@ def _parse_iso(value: str | None) -> datetime | None:
         return None
 
 
+def _slot_counts() -> tuple[int, int]:
+    return (
+        settings_store.count_early_trials(),
+        settings_store.count_early_ultra_trials(),
+    )
+
+
 def get_plan_info(guild_id: int) -> PlanInfo:
     data = settings_store.get_guild_plan(guild_id)
-    slots_used = settings_store.count_early_trials()
+    slots_used, ultra_slots_used = _slot_counts()
     early_slot = bool(data.get("early_slot"))
+    early_ultra_slot = bool(data.get("early_ultra_slot"))
+    ends = _parse_iso(data.get("trial_ends"))
+    trial_active = bool(ends and ends > _now())
 
-    if data.get("ultra") or data.get("plan") == "ultra" or data.get("lifetime"):
+    base = dict(
+        early_slot=early_slot,
+        early_ultra_slot=early_ultra_slot,
+        slots_used=slots_used,
+        slots_limit=EARLY_TRIAL_LIMIT,
+        ultra_slots_used=ultra_slots_used,
+        ultra_slots_limit=EARLY_ULTRA_TRIAL_LIMIT,
+    )
+
+    # Paid Lifetime / paid Ultra
+    if data.get("lifetime") or (
+        data.get("premium") and data.get("ultra") and not data.get("ultra_trial")
+    ):
         label = "Ultra Lifetime" if data.get("lifetime") else "Ultra Premium"
         return PlanInfo(
             plan="ultra",
             active=True,
             label=label,
             trial_ends=None,
-            early_slot=early_slot,
-            slots_used=slots_used,
+            is_trial=False,
+            **base,
+        )
+
+    # Active Ultra early demo (full Ultra limits)
+    if data.get("ultra_trial") and trial_active:
+        return PlanInfo(
+            plan="ultra",
+            active=True,
+            label="Ultra Demo",
+            trial_ends=ends.date().isoformat() if ends else None,
+            is_trial=True,
+            **base,
         )
 
     if data.get("premium") or data.get("plan") == "premium":
@@ -70,19 +108,19 @@ def get_plan_info(guild_id: int) -> PlanInfo:
             active=True,
             label="Premium",
             trial_ends=None,
-            early_slot=early_slot,
-            slots_used=slots_used,
+            is_trial=False,
+            **base,
         )
 
-    ends = _parse_iso(data.get("trial_ends"))
-    if ends and ends > _now():
+    # Active Premium early demo
+    if trial_active and not data.get("ultra_trial"):
         return PlanInfo(
             plan="trial",
             active=True,
-            label="Demo / Trial",
-            trial_ends=ends.date().isoformat(),
-            early_slot=early_slot,
-            slots_used=slots_used,
+            label="Premium Demo",
+            trial_ends=ends.date().isoformat() if ends else None,
+            is_trial=True,
+            **base,
         )
 
     return PlanInfo(
@@ -90,8 +128,8 @@ def get_plan_info(guild_id: int) -> PlanInfo:
         active=False,
         label="Free",
         trial_ends=data.get("trial_ends"),
-        early_slot=early_slot,
-        slots_used=slots_used,
+        is_trial=False,
+        **base,
     )
 
 
@@ -109,28 +147,44 @@ def has_ultra_features(guild_id: int | None) -> bool:
 
 
 def ensure_early_trial(guild_id: int) -> PlanInfo:
-    """Grant 3-month Premium demo to first N servers that install the bot."""
+    """Grant early demos: first 10 servers → Ultra 90d; next Premium slots → Premium 90d."""
     info = get_plan_info(guild_id)
-    if info.plan in {"premium", "ultra", "trial"} and info.active:
+    if info.plan in {"premium", "ultra"} and info.active and not info.is_trial:
+        return info
+    if info.active and info.is_trial:
         return info
 
     data = settings_store.get_guild_plan(guild_id)
-    # Already had a trial that expired — don't auto-renew
-    if data.get("trial_ends") and not info.active and not data.get("premium"):
-        return info
-
-    if settings_store.count_early_trials() >= EARLY_TRIAL_LIMIT:
+    # Already used a trial that expired — don't auto-renew
+    if data.get("trial_ends") and not info.active:
         return info
 
     started = _now()
     ends = started + timedelta(days=EARLY_TRIAL_DAYS)
-    settings_store.set_guild_trial(
-        guild_id,
-        started=started.isoformat(),
-        ends=ends.isoformat(),
-        early_slot=True,
-    )
-    return get_plan_info(guild_id)
+
+    ultra_used = settings_store.count_early_ultra_trials()
+    if ultra_used < EARLY_ULTRA_TRIAL_LIMIT:
+        settings_store.set_guild_trial(
+            guild_id,
+            started=started.isoformat(),
+            ends=ends.isoformat(),
+            early_slot=True,
+            ultra=True,
+        )
+        return get_plan_info(guild_id)
+
+    premium_used = settings_store.count_early_trials()
+    if premium_used < EARLY_TRIAL_LIMIT:
+        settings_store.set_guild_trial(
+            guild_id,
+            started=started.isoformat(),
+            ends=ends.isoformat(),
+            early_slot=True,
+            ultra=False,
+        )
+        return get_plan_info(guild_id)
+
+    return info
 
 
 def user_rate_limit(guild_id: int | None) -> int:
@@ -189,6 +243,6 @@ ULTRA_FEATURES = [
     "Built for servers with thousands of members",
     f"{ULTRA_USER_RPM} AI requests / 10 min per user",
     f"{ULTRA_GUILD_DAILY} AI requests / day per server",
-    "Best for large communities & heavy auto-chat",
+    f"First {EARLY_ULTRA_TRIAL_LIMIT} servers: 3 months Ultra free",
     "Optional Ultra Lifetime — pay once, keep forever",
 ]

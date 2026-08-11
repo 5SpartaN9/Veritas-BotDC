@@ -36,49 +36,50 @@ document.querySelectorAll('a[href^="#"]').forEach((link) => {
 
 window.addEventListener("hashchange", () => scrollToHash(location.hash));
 
-/* --- Regional pricing (income / PPP vs US) --- */
+/* --- Regional pricing estimates (checkout = billing/card country) --- */
 const BASE = { premium: 4.99, ultra: 14.99, lifetime: 60 };
+const MIN_FACTOR = 0.48;
 
 const REGIONS = {
   US: { name: "United States", currency: "USD", symbol: "$", factor: 1.0, fx: 1 },
-  CA: { name: "Canada", currency: "CAD", symbol: "C$", factor: 0.92, fx: 1.37 },
+  CA: { name: "Canada", currency: "CAD", symbol: "C$", factor: 0.95, fx: 1.37 },
   GB: { name: "United Kingdom", currency: "GBP", symbol: "£", factor: 0.95, fx: 0.79 },
   IE: { name: "Ireland", currency: "EUR", symbol: "€", factor: 0.95, fx: 0.92 },
-  DE: { name: "Germany", currency: "EUR", symbol: "€", factor: 0.9, fx: 0.92 },
-  FR: { name: "France", currency: "EUR", symbol: "€", factor: 0.88, fx: 0.92 },
-  NL: { name: "Netherlands", currency: "EUR", symbol: "€", factor: 0.92, fx: 0.92 },
-  SE: { name: "Sweden", currency: "SEK", symbol: "kr", factor: 0.9, fx: 10.5 },
+  DE: { name: "Germany", currency: "EUR", symbol: "€", factor: 0.92, fx: 0.92 },
+  FR: { name: "France", currency: "EUR", symbol: "€", factor: 0.9, fx: 0.92 },
+  NL: { name: "Netherlands", currency: "EUR", symbol: "€", factor: 0.94, fx: 0.92 },
+  SE: { name: "Sweden", currency: "SEK", symbol: "kr", factor: 0.92, fx: 10.5 },
   NO: { name: "Norway", currency: "NOK", symbol: "kr", factor: 1.05, fx: 10.7 },
   CH: { name: "Switzerland", currency: "CHF", symbol: "CHF", factor: 1.1, fx: 0.88 },
   AU: { name: "Australia", currency: "AUD", symbol: "A$", factor: 0.95, fx: 1.53 },
-  NZ: { name: "New Zealand", currency: "NZD", symbol: "NZ$", factor: 0.88, fx: 1.66 },
-  JP: { name: "Japan", currency: "JPY", symbol: "¥", factor: 0.85, fx: 150 },
-  KR: { name: "South Korea", currency: "KRW", symbol: "₩", factor: 0.8, fx: 1350 },
+  NZ: { name: "New Zealand", currency: "NZD", symbol: "NZ$", factor: 0.9, fx: 1.66 },
+  JP: { name: "Japan", currency: "JPY", symbol: "¥", factor: 0.88, fx: 150 },
+  KR: { name: "South Korea", currency: "KRW", symbol: "₩", factor: 0.85, fx: 1350 },
   SG: { name: "Singapore", currency: "SGD", symbol: "S$", factor: 0.95, fx: 1.34 },
-  AE: { name: "United Arab Emirates", currency: "AED", symbol: "AED", factor: 0.9, fx: 3.67 },
-  PL: { name: "Poland", currency: "PLN", symbol: "zł", factor: 0.55, fx: 3.95 },
-  CZ: { name: "Czechia", currency: "CZK", symbol: "Kč", factor: 0.58, fx: 23 },
-  HU: { name: "Hungary", currency: "HUF", symbol: "Ft", factor: 0.48, fx: 360 },
-  RO: { name: "Romania", currency: "RON", symbol: "lei", factor: 0.45, fx: 4.6 },
-  ES: { name: "Spain", currency: "EUR", symbol: "€", factor: 0.75, fx: 0.92 },
-  IT: { name: "Italy", currency: "EUR", symbol: "€", factor: 0.78, fx: 0.92 },
-  PT: { name: "Portugal", currency: "EUR", symbol: "€", factor: 0.7, fx: 0.92 },
-  GR: { name: "Greece", currency: "EUR", symbol: "€", factor: 0.65, fx: 0.92 },
-  TR: { name: "Türkiye", currency: "TRY", symbol: "₺", factor: 0.35, fx: 34 },
-  UA: { name: "Ukraine", currency: "UAH", symbol: "₴", factor: 0.3, fx: 41 },
-  BR: { name: "Brazil", currency: "BRL", symbol: "R$", factor: 0.42, fx: 5.5 },
-  MX: { name: "Mexico", currency: "MXN", symbol: "MX$", factor: 0.4, fx: 17.5 },
-  AR: { name: "Argentina", currency: "ARS", symbol: "AR$", factor: 0.28, fx: 950 },
-  CL: { name: "Chile", currency: "CLP", symbol: "CLP", factor: 0.48, fx: 950 },
-  IN: { name: "India", currency: "INR", symbol: "₹", factor: 0.25, fx: 84 },
-  PH: { name: "Philippines", currency: "PHP", symbol: "₱", factor: 0.28, fx: 58 },
-  ID: { name: "Indonesia", currency: "IDR", symbol: "Rp", factor: 0.26, fx: 16000 },
-  VN: { name: "Vietnam", currency: "VND", symbol: "₫", factor: 0.24, fx: 25000 },
-  TH: { name: "Thailand", currency: "THB", symbol: "฿", factor: 0.38, fx: 35 },
-  MY: { name: "Malaysia", currency: "MYR", symbol: "RM", factor: 0.45, fx: 4.5 },
-  ZA: { name: "South Africa", currency: "ZAR", symbol: "R", factor: 0.4, fx: 18.5 },
-  NG: { name: "Nigeria", currency: "NGN", symbol: "₦", factor: 0.22, fx: 1550 },
-  EG: { name: "Egypt", currency: "EGP", symbol: "E£", factor: 0.22, fx: 48 },
+  AE: { name: "United Arab Emirates", currency: "AED", symbol: "AED", factor: 0.92, fx: 3.67 },
+  PL: { name: "Poland", currency: "PLN", symbol: "zł", factor: 0.85, fx: 3.95 },
+  CZ: { name: "Czechia", currency: "CZK", symbol: "Kč", factor: 0.82, fx: 23 },
+  HU: { name: "Hungary", currency: "HUF", symbol: "Ft", factor: 0.72, fx: 360 },
+  RO: { name: "Romania", currency: "RON", symbol: "lei", factor: 0.68, fx: 4.6 },
+  ES: { name: "Spain", currency: "EUR", symbol: "€", factor: 0.85, fx: 0.92 },
+  IT: { name: "Italy", currency: "EUR", symbol: "€", factor: 0.85, fx: 0.92 },
+  PT: { name: "Portugal", currency: "EUR", symbol: "€", factor: 0.8, fx: 0.92 },
+  GR: { name: "Greece", currency: "EUR", symbol: "€", factor: 0.75, fx: 0.92 },
+  TR: { name: "Türkiye", currency: "TRY", symbol: "₺", factor: 0.55, fx: 34 },
+  UA: { name: "Ukraine", currency: "UAH", symbol: "₴", factor: 0.5, fx: 41 },
+  BR: { name: "Brazil", currency: "BRL", symbol: "R$", factor: 0.58, fx: 5.5 },
+  MX: { name: "Mexico", currency: "MXN", symbol: "MX$", factor: 0.55, fx: 17.5 },
+  AR: { name: "Argentina", currency: "ARS", symbol: "AR$", factor: 0.5, fx: 950 },
+  CL: { name: "Chile", currency: "CLP", symbol: "CLP", factor: 0.62, fx: 950 },
+  IN: { name: "India", currency: "INR", symbol: "₹", factor: 0.48, fx: 84 },
+  PH: { name: "Philippines", currency: "PHP", symbol: "₱", factor: 0.5, fx: 58 },
+  ID: { name: "Indonesia", currency: "IDR", symbol: "Rp", factor: 0.48, fx: 16000 },
+  VN: { name: "Vietnam", currency: "VND", symbol: "₫", factor: 0.48, fx: 25000 },
+  TH: { name: "Thailand", currency: "THB", symbol: "฿", factor: 0.55, fx: 35 },
+  MY: { name: "Malaysia", currency: "MYR", symbol: "RM", factor: 0.62, fx: 4.5 },
+  ZA: { name: "South Africa", currency: "ZAR", symbol: "R", factor: 0.55, fx: 18.5 },
+  NG: { name: "Nigeria", currency: "NGN", symbol: "₦", factor: 0.48, fx: 1550 },
+  EG: { name: "Egypt", currency: "EGP", symbol: "E£", factor: 0.48, fx: 48 },
 };
 
 const ZERO_DECIMAL = new Set(["JPY", "KRW", "VND", "IDR", "HUF", "CLP", "ARS", "NGN"]);
@@ -121,7 +122,8 @@ function formatMoney(amount, region) {
 }
 
 function localAmount(baseUsd, region) {
-  return niceRound(baseUsd * region.factor * region.fx, region.currency);
+  const factor = Math.max(region.factor, MIN_FACTOR);
+  return niceRound(baseUsd * factor * region.fx, region.currency);
 }
 
 function guessRegionCode() {
@@ -139,6 +141,9 @@ function applyPrices(code) {
   const premium = localAmount(BASE.premium, region);
   const ultra = localAmount(BASE.ultra, region);
   const lifetime = localAmount(BASE.lifetime, region);
+
+  const nameEl = document.getElementById("price-region-name");
+  if (nameEl) nameEl.textContent = region.name;
 
   document.querySelectorAll('[data-price="premium"]').forEach((el) => {
     el.textContent = `${formatMoney(premium, region)} / mo`;
@@ -161,26 +166,9 @@ function applyPrices(code) {
 }
 
 function initRegionalPricing() {
-  const select = document.getElementById("price-region");
-  if (!select) return;
-
-  const entries = Object.entries(REGIONS).sort((a, b) => a[1].name.localeCompare(b[1].name));
-  for (const [code, region] of entries) {
-    const opt = document.createElement("option");
-    opt.value = code;
-    opt.textContent = region.name;
-    select.appendChild(opt);
-  }
-
-  const saved = localStorage.getItem("veritas-price-region");
-  const initial = saved && REGIONS[saved] ? saved : guessRegionCode();
-  select.value = initial;
-  applyPrices(initial);
-
-  select.addEventListener("change", () => {
-    localStorage.setItem("veritas-price-region", select.value);
-    applyPrices(select.value);
-  });
+  // Auto-detect only — no country picker (VPN shopping).
+  // Real charge must use Stripe billing / card country.
+  applyPrices(guessRegionCode());
 }
 
 initRegionalPricing();

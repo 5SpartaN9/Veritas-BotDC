@@ -16,7 +16,7 @@
       rel="stylesheet"
     />
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-    <link rel="stylesheet" href="styles.css?v=8" />
+    <link rel="stylesheet" href="styles.css?v=9" />
   </head>
   <body>
     <div class="noise" aria-hidden="true"></div>
@@ -158,20 +158,22 @@
           <h2>Free forever. Premium when you need more.</h2>
           <p>
             Core fact-checking stays free with tight daily limits so Veritas
-            stays affordable. Prices change by country based on typical local
-            income — fairer for communities outside the US. Ultra Lifetime
-            unlocks Ultra Premium forever with one payment.
+            stays affordable. Local price estimates follow typical income levels.
+            What you pay is set at checkout from your card / billing country —
+            VPN tricks won’t lower it. Ultra Lifetime is one payment, forever.
           </p>
         </div>
 
         <div class="pricing-region">
-          <label for="price-region">Prices shown for</label>
-          <select id="price-region" name="price-region" aria-describedby="price-region-note"></select>
+          <p class="pricing-region-label">
+            Estimate for <strong id="price-region-name">your region</strong>
+          </p>
           <p id="price-region-note" class="pricing-region-note">
-            Adjusted for local earnings vs the US reference list
-            (<span data-price="ref-premium">$4.99</span> /
+            US list:
+            <span data-price="ref-premium">$4.99</span> /
             <span data-price="ref-ultra">$14.99</span> /
-            <span data-price="ref-lifetime">$60</span> USD).
+            <span data-price="ref-lifetime">$60</span>
+            · final charge uses payment country, not VPN location.
           </p>
         </div>
 
@@ -217,12 +219,12 @@
               <li>Everything in Premium</li>
               <li>Built for servers with thousands of members</li>
               <li>Heavy auto-chat without hitting Free/Premium caps</li>
-              <li>Best for large communities</li>
+              <li><strong>First 10 servers: 3 months Ultra free</strong></li>
             </ul>
             <a class="btn" href="https://discord.com/api/oauth2/authorize?client_id=1533047923829375056&permissions=36703232&scope=bot%20applications.commands">
               Invite Veritas
             </a>
-            <p class="plan-note">Monthly Ultra via the web dashboard after Stripe is connected.</p>
+            <p class="plan-note">Early Ultra demo unlocks automatically for the first 10 installs.</p>
           </div>
         </div>
 
@@ -237,7 +239,7 @@
           </div>
           <div class="lifetime-price-block">
             <p class="price lifetime-price" data-price="lifetime">$60 once</p>
-            <p class="plan-note">US reference ~$60 · your country may be lower</p>
+            <p class="plan-note">Checkout price follows your card / billing country.</p>
             <a class="btn" href="https://discord.com/api/oauth2/authorize?client_id=1533047923829375056&permissions=36703232&scope=bot%20applications.commands">
               Invite Veritas
             </a>
@@ -271,6 +273,6 @@
       <p class="fineprint">Not affiliated with Discord Inc. Use responsibly.</p>
     </footer>
 
-    <script src="script.js?v=5"></script>
+    <script src="script.js?v=6"></script>
   </body>
 </html>

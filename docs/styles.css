@@ -415,20 +415,15 @@ code {
   background: rgba(255, 255, 255, 0.02);
 }
 
-.pricing-region label {
-  font-size: 0.88rem;
-  color: var(--muted);
+.pricing-region-label {
+  margin: 0;
+  font-size: 0.92rem;
+  color: var(--ink);
 }
 
-.pricing-region select {
-  min-width: 12rem;
-  padding: 0.45rem 0.7rem;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: #0a0b0c;
-  color: var(--ink);
-  font: inherit;
-  font-size: 0.92rem;
+.pricing-region-label strong {
+  color: var(--accent-2);
+  font-weight: 600;
 }
 
 .pricing-region-note {

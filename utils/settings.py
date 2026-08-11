@@ -11,6 +11,7 @@ SETTINGS_PATH = DATA_DIR / "settings.json"
 DEFAULT_AUTOCHAT = "mention"
 DEFAULT_LANGUAGE = "auto"
 EARLY_TRIAL_LIMIT_DEFAULT = 15
+EARLY_ULTRA_TRIAL_LIMIT_DEFAULT = 10
 
 
 class SettingsStore:
@@ -128,14 +129,17 @@ class SettingsStore:
                 guild["ultra"] = True
                 guild["premium"] = True
                 guild["plan"] = "ultra"
+                guild.pop("ultra_trial", None)
             elif enabled:
                 guild["plan"] = "ultra" if ultra else "premium"
+                guild.pop("ultra_trial", None)
                 if not ultra:
                     guild.pop("lifetime", None)
             else:
                 guild["plan"] = "free"
                 guild["ultra"] = False
                 guild.pop("lifetime", None)
+                guild.pop("ultra_trial", None)
             if stripe_customer_id is not None:
                 guild["stripe_customer_id"] = stripe_customer_id
             if stripe_subscription_id is not None:
@@ -164,14 +168,24 @@ class SettingsStore:
         started: str,
         ends: str,
         early_slot: bool,
+        ultra: bool = False,
     ) -> None:
         with self._lock:
             self._load()
             guild = self._data["guilds"].setdefault(str(guild_id), {})
             guild["trial_started"] = started
             guild["trial_ends"] = ends
-            guild["early_slot"] = early_slot
             guild["premium"] = False
+            guild["ultra"] = False
+            guild.pop("lifetime", None)
+            if ultra:
+                guild["ultra_trial"] = True
+                guild["early_ultra_slot"] = early_slot
+                guild["plan"] = "ultra"
+            else:
+                guild["early_slot"] = early_slot
+                guild.pop("ultra_trial", None)
+                guild["plan"] = "trial"
             self._save()
 
     def count_early_trials(self) -> int:
@@ -183,6 +197,15 @@ class SettingsStore:
                 if guild.get("early_slot")
             )
 
+    def count_early_ultra_trials(self) -> int:
+        with self._lock:
+            self._load()
+            return sum(
+                1
+                for guild in self._data["guilds"].values()
+                if guild.get("early_ultra_slot")
+            )
+
     def early_trial_limit(self) -> int:
         with self._lock:
             self._load()
@@ -190,6 +213,16 @@ class SettingsStore:
                 self._data.get("meta", {}).get(
                     "early_trial_limit",
                     EARLY_TRIAL_LIMIT_DEFAULT,
+                )
+            )
+
+    def early_ultra_trial_limit(self) -> int:
+        with self._lock:
+            self._load()
+            return int(
+                self._data.get("meta", {}).get(
+                    "early_ultra_trial_limit",
+                    EARLY_ULTRA_TRIAL_LIMIT_DEFAULT,
                 )
             )
 
