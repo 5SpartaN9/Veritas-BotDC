@@ -68,17 +68,81 @@ _COUNTRY_CURRENCY: dict[str, Currency] = {
 }
 
 
+def currency_for_country(country: str | None) -> Currency:
+    if not country:
+        return "USD"
+    return _COUNTRY_CURRENCY.get(country.upper(), "USD")
+
+
+def currency_from_accept_language(header: str | None) -> Currency | None:
+    """Map browser language to catalog currency (no user picker)."""
+    if not header:
+        return None
+    # e.g. "ru-RU,ru;q=0.9,en;q=0.8"
+    primary = header.split(",")[0].strip().lower()
+    lang = primary.split("-")[0]
+    region = primary.split("-")[1].upper() if "-" in primary else ""
+    if region and region in _COUNTRY_CURRENCY:
+        return _COUNTRY_CURRENCY[region]
+    lang_map: dict[str, Currency] = {
+        "ru": "RUB",
+        "pl": "PLN",
+        "zh": "CNY",
+        "de": "EUR",
+        "fr": "EUR",
+        "es": "EUR",
+        "it": "EUR",
+        "nl": "EUR",
+        "pt": "EUR",
+        "el": "EUR",
+        "fi": "EUR",
+        "en": "USD",
+    }
+    return lang_map.get(lang)
+
+
+def detect_checkout_currency(
+    *,
+    country_header: str | None = None,
+    accept_language: str | None = None,
+) -> Currency:
+    """
+    Regional price lock: geo/country header first, then Accept-Language.
+    Never trust a client-submitted currency (prevents picking cheap RUB/CNY).
+    """
+    if country_header:
+        code = country_header.strip().upper()
+        if len(code) >= 2:
+            return currency_for_country(code[:2])
+    from_lang = currency_from_accept_language(accept_language)
+    if from_lang:
+        return from_lang
+    return "USD"
+
+
+def currency_from_request_headers(headers: dict[str, str]) -> Currency:
+    """Pick currency from proxy geo headers + Accept-Language."""
+    lower = {k.lower(): v for k, v in headers.items()}
+    country = (
+        lower.get("cf-ipcountry")
+        or lower.get("cloudfront-viewer-country")
+        or lower.get("x-vercel-ip-country")
+        or lower.get("x-country-code")
+        or lower.get("x-geo-country")
+    )
+    if country and country.upper() in {"XX", "T1"}:
+        country = None
+    return detect_checkout_currency(
+        country_header=country,
+        accept_language=lower.get("accept-language"),
+    )
+
+
 def normalize_currency(value: str | None) -> Currency:
     code = (value or "USD").strip().upper()
     if code in CURRENCIES:
         return code  # type: ignore[return-value]
     return "USD"
-
-
-def currency_for_country(country: str | None) -> Currency:
-    if not country:
-        return "USD"
-    return _COUNTRY_CURRENCY.get(country.upper(), "USD")
 
 
 def _legacy_usd(tier: Tier) -> str:

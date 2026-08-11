@@ -47,7 +47,7 @@ from web.payments import (
     handle_webhook,
     stripe_ready,
 )
-from web.stripe_catalog import currency_options, label_for
+from web.stripe_catalog import currency_from_request_headers, label_for
 
 WEB_DIR = Path(__file__).resolve().parent
 SITE_DIR = ROOT / "website"
@@ -236,20 +236,20 @@ async def guild_dashboard(request: Request, guild_id: str):
         )
 
     try:
-        currencies = currency_options()
+        checkout_currency = currency_from_request_headers(
+            {k: v for k, v in request.headers.items()}
+        )
         price_map = {
-            "premium": {c: label_for("premium", c) for c in ("USD", "EUR", "PLN", "RUB", "CNY")},
-            "ultra": {c: label_for("ultra", c) for c in ("USD", "EUR", "PLN", "RUB", "CNY")},
-            "lifetime": {
-                c: label_for("ultra_lifetime", c) for c in ("USD", "EUR", "PLN", "RUB", "CNY")
-            },
+            "premium": label_for("premium", checkout_currency),
+            "ultra": label_for("ultra", checkout_currency),
+            "lifetime": label_for("ultra_lifetime", checkout_currency),
         }
     except Exception:
-        currencies = [{"code": "USD", "name": "USD - US Dollar"}]
+        checkout_currency = "USD"
         price_map = {
-            "premium": {"USD": PREMIUM_PRICE_LABEL},
-            "ultra": {"USD": ULTRA_PRICE_LABEL},
-            "lifetime": {"USD": ULTRA_LIFETIME_PRICE_LABEL},
+            "premium": PREMIUM_PRICE_LABEL,
+            "ultra": ULTRA_PRICE_LABEL,
+            "lifetime": ULTRA_LIFETIME_PRICE_LABEL,
         }
 
     return templates.TemplateResponse(
@@ -278,9 +278,10 @@ async def guild_dashboard(request: Request, guild_id: str):
             "is_paid_premium": plan.plan in {"premium", "ultra"},
             "is_ultra": plan.plan == "ultra",
             "is_lifetime": bool(guild_plan_data.get("lifetime")),
-            "currency_options": currencies,
-            "default_currency": "PLN",
-            "price_by_currency": price_map,
+            "checkout_currency": checkout_currency,
+            "regional_premium_price": price_map["premium"],
+            "regional_ultra_price": price_map["ultra"],
+            "regional_lifetime_price": price_map["lifetime"],
         },
     )
 
@@ -290,7 +291,6 @@ async def start_checkout(
     request: Request,
     guild_id: str,
     tier: str = Form("premium"),
-    currency: str = Form("USD"),
 ):
     session_data = current_session(request)
     if not session_data or not session_data.get("user"):
@@ -302,6 +302,8 @@ async def start_checkout(
         raise HTTPException(status_code=403, detail="No access")
     if tier not in {"premium", "ultra", "ultra_lifetime"}:
         tier = "premium"
+    # Ignore any client currency — lock to region (language / geo headers)
+    currency = currency_from_request_headers({k: v for k, v in request.headers.items()})
     if not stripe_ready(tier, currency):
         raise HTTPException(
             status_code=503,
