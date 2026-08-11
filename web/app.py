@@ -109,8 +109,8 @@ async def home_page(
     index = SITE_DIR / "index.html"
     html = index.read_text(encoding="utf-8")
     html = (
-        html.replace('href="styles.css"', 'href="/site/styles.css"')
-        .replace('src="script.js"', 'src="/site/script.js"')
+        html.replace('href="styles.css', 'href="/site/styles.css')
+        .replace('src="script.js', 'src="/site/script.js')
         .replace('href="assets/', 'href="/site/assets/')
         .replace(
             '<a class="btn btn-small" href="#invite">Add to Discord</a>',

@@ -7,7 +7,7 @@ load_dotenv(Path(__file__).parent / ".env")
 
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-flash-latest")
 
 # Public links (Discord /about, bot description)
 SITE_URL = os.getenv(
