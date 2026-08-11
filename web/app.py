@@ -191,9 +191,15 @@ async def guild_dashboard(request: Request, guild_id: str):
     if not guild or not _can_manage(guild):
         raise HTTPException(status_code=403, detail="No access to this server")
 
-    bot_guild_ids = await fetch_bot_guild_ids()
-    bot_in = guild_id in bot_guild_ids
+    bot_guild_ids: set[str] = set()
+    bot_in = False
     channels = []
+    try:
+        bot_guild_ids = await fetch_bot_guild_ids()
+        bot_in = guild_id in bot_guild_ids
+    except Exception:
+        bot_guild_ids = set()
+        bot_in = False
 
     # Fallback unlock if Stripe webhooks failed but checkout succeeded
     if request.query_params.get("paid") == "1":
@@ -206,7 +212,10 @@ async def guild_dashboard(request: Request, guild_id: str):
 
     plan = get_plan_info(int(guild_id))
     if bot_in:
-        plan = ensure_early_trial(int(guild_id))
+        try:
+            plan = ensure_early_trial(int(guild_id))
+        except Exception:
+            plan = get_plan_info(int(guild_id))
         try:
             channels = await fetch_guild_channels(guild_id)
         except Exception:
@@ -225,6 +234,23 @@ async def guild_dashboard(request: Request, guild_id: str):
                 "watchlist": settings_store.get_watchlist(cid),
             }
         )
+
+    try:
+        currencies = currency_options()
+        price_map = {
+            "premium": {c: label_for("premium", c) for c in ("USD", "EUR", "PLN", "RUB", "CNY")},
+            "ultra": {c: label_for("ultra", c) for c in ("USD", "EUR", "PLN", "RUB", "CNY")},
+            "lifetime": {
+                c: label_for("ultra_lifetime", c) for c in ("USD", "EUR", "PLN", "RUB", "CNY")
+            },
+        }
+    except Exception:
+        currencies = [{"code": "USD", "name": "USD - US Dollar"}]
+        price_map = {
+            "premium": {"USD": PREMIUM_PRICE_LABEL},
+            "ultra": {"USD": ULTRA_PRICE_LABEL},
+            "lifetime": {"USD": ULTRA_LIFETIME_PRICE_LABEL},
+        }
 
     return templates.TemplateResponse(
         request,
@@ -252,15 +278,9 @@ async def guild_dashboard(request: Request, guild_id: str):
             "is_paid_premium": plan.plan in {"premium", "ultra"},
             "is_ultra": plan.plan == "ultra",
             "is_lifetime": bool(guild_plan_data.get("lifetime")),
-            "currency_options": currency_options(),
+            "currency_options": currencies,
             "default_currency": "PLN",
-            "price_by_currency": {
-                "premium": {c: label_for("premium", c) for c in ("USD", "EUR", "PLN", "RUB", "CNY")},
-                "ultra": {c: label_for("ultra", c) for c in ("USD", "EUR", "PLN", "RUB", "CNY")},
-                "lifetime": {
-                    c: label_for("ultra_lifetime", c) for c in ("USD", "EUR", "PLN", "RUB", "CNY")
-                },
-            },
+            "price_by_currency": price_map,
         },
     )
 

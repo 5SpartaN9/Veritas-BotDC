@@ -111,9 +111,9 @@ def amount_for(tier: Tier, currency: Currency) -> float:
 
 def currency_options() -> list[dict[str, str]]:
     return [
-        {"code": "USD", "name": "USD — US Dollar"},
-        {"code": "EUR", "name": "EUR — Euro"},
-        {"code": "PLN", "name": "PLN — Polish Złoty"},
-        {"code": "RUB", "name": "RUB — Russian Ruble"},
-        {"code": "CNY", "name": "CNY — Chinese Yuan"},
+        {"code": "USD", "name": "USD - US Dollar"},
+        {"code": "EUR", "name": "EUR - Euro"},
+        {"code": "PLN", "name": "PLN - Polish Zloty"},
+        {"code": "RUB", "name": "RUB - Russian Ruble"},
+        {"code": "CNY", "name": "CNY - Chinese Yuan"},
     ]
