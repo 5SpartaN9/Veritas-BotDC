@@ -9,14 +9,15 @@ EARLY_TRIAL_LIMIT = 15  # Premium demo slots
 EARLY_ULTRA_TRIAL_LIMIT = 10  # Ultra demo slots (separate)
 EARLY_TRIAL_DAYS = 90
 
-# Budget-friendly limits (Gemini costs money per request)
+# Limits sized so paid plans stay modestly profitable at max use
+# (~4.5 gr / AI ask). Caps are the product, not “infinite AI”.
 FREE_USER_RPM = 2  # per 10 minutes
-PREMIUM_USER_RPM = 8
-ULTRA_USER_RPM = 20
+PREMIUM_USER_RPM = 5
+ULTRA_USER_RPM = 10
 
-FREE_GUILD_DAILY = 15
-PREMIUM_GUILD_DAILY = 80
-ULTRA_GUILD_DAILY = 500  # big servers (thousands of members)
+FREE_GUILD_DAILY = 10
+PREMIUM_GUILD_DAILY = 12
+ULTRA_GUILD_DAILY = 35  # busy servers, still safe vs Gemini cost
 
 PREMIUM_COMMANDS = {"debate", "multicheck", "watchcheck"}
 PREMIUM_AUTOCHAT_MODES = {"questions", "all"}
@@ -240,7 +241,7 @@ PREMIUM_FEATURES = [
 
 ULTRA_FEATURES = [
     "Everything in Premium",
-    "Built for servers with thousands of members",
+    "Higher limits for busy / large communities",
     f"{ULTRA_USER_RPM} AI requests / 10 min per user",
     f"{ULTRA_GUILD_DAILY} AI requests / day per server",
     f"First {EARLY_ULTRA_TRIAL_LIMIT} servers: 3 months Ultra free",

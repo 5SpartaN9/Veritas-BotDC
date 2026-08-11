@@ -9,9 +9,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 # Base list prices in USD (United States reference)
-BASE_PREMIUM_USD = 4.99
-BASE_ULTRA_USD = 14.99
-BASE_ULTRA_LIFETIME_USD = 60.00
+# Tuned so max-limit Gemini cost still leaves a small margin.
+BASE_PREMIUM_USD = 5.99
+BASE_ULTRA_USD = 16.99
+BASE_ULTRA_LIFETIME_USD = 79.00
 
 # Never show / aim below this share of US USD value (anti-dump floor)
 MIN_INCOME_FACTOR = 0.48
@@ -47,7 +48,7 @@ REGIONS: dict[str, RegionPrice] = {
     "KR": RegionPrice("KR", "South Korea", "KRW", "₩", 0.85, 1350.0),
     "SG": RegionPrice("SG", "Singapore", "SGD", "S$", 0.95, 1.34),
     "AE": RegionPrice("AE", "United Arab Emirates", "AED", "AED", 0.92, 3.67),
-    # ~200 zł Lifetime at ~3.95 PLN/USD
+    # ~265 zł Lifetime at ~3.95 PLN/USD
     "PL": RegionPrice("PL", "Poland", "PLN", "zł", 0.85, 3.95),
     "CZ": RegionPrice("CZ", "Czechia", "CZK", "Kč", 0.82, 23.0),
     "HU": RegionPrice("HU", "Hungary", "HUF", "Ft", 0.72, 360.0),

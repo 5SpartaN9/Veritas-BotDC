@@ -37,7 +37,7 @@ document.querySelectorAll('a[href^="#"]').forEach((link) => {
 window.addEventListener("hashchange", () => scrollToHash(location.hash));
 
 /* --- Regional pricing estimates (checkout = billing/card country) --- */
-const BASE = { premium: 4.99, ultra: 14.99, lifetime: 60 };
+const BASE = { premium: 5.99, ultra: 16.99, lifetime: 79 };
 const MIN_FACTOR = 0.48;
 
 const REGIONS = {
