@@ -41,6 +41,7 @@ from web.config import (
 )
 from web.discord_api import fetch_bot_guild_ids, fetch_guild_channels
 from web.payments import (
+    activate_from_checkout_session,
     create_billing_portal,
     create_checkout_session,
     handle_webhook,
@@ -192,6 +193,16 @@ async def guild_dashboard(request: Request, guild_id: str):
     bot_guild_ids = await fetch_bot_guild_ids()
     bot_in = guild_id in bot_guild_ids
     channels = []
+
+    # Fallback unlock if Stripe webhooks failed but checkout succeeded
+    if request.query_params.get("paid") == "1":
+        session_id = request.query_params.get("session_id") or ""
+        if session_id.startswith("cs_"):
+            try:
+                activate_from_checkout_session(session_id)
+            except Exception:
+                pass
+
     plan = get_plan_info(int(guild_id))
     if bot_in:
         plan = ensure_early_trial(int(guild_id))

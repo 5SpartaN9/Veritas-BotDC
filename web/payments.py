@@ -60,7 +60,10 @@ def create_checkout_session(
         raise RuntimeError("Stripe price is not configured")
 
     stripe.api_key = STRIPE_SECRET_KEY
-    success = f"{PUBLIC_BASE_URL}/dashboard/{guild_id}?paid=1&tier={tier}"
+    success = (
+        f"{PUBLIC_BASE_URL}/dashboard/{guild_id}"
+        f"?paid=1&tier={tier}&session_id={{CHECKOUT_SESSION_ID}}"
+    )
     cancel = f"{PUBLIC_BASE_URL}/dashboard/{guild_id}?canceled=1"
 
     meta = {
@@ -115,12 +118,11 @@ def create_billing_portal(*, customer_id: str, guild_id: str) -> str:
 
 def handle_webhook(payload: bytes, signature: str | None) -> dict[str, str]:
     stripe.api_key = STRIPE_SECRET_KEY
-    if STRIPE_WEBHOOK_SECRET:
+    secret = (STRIPE_WEBHOOK_SECRET or "").strip()
+    if secret:
         if not signature:
             raise ValueError("Missing Stripe signature")
-        event = stripe.Webhook.construct_event(
-            payload, signature, STRIPE_WEBHOOK_SECRET
-        )
+        event = stripe.Webhook.construct_event(payload, signature, secret)
     else:
         import json
 
@@ -128,7 +130,20 @@ def handle_webhook(payload: bytes, signature: str | None) -> dict[str, str]:
 
     etype = event["type"]
     data = event["data"]["object"]
+    return _apply_checkout_or_subscription(etype, data)
 
+
+def activate_from_checkout_session(session_id: str) -> dict[str, str]:
+    """Fallback when webhooks fail: unlock plan from Checkout Session id."""
+    if not STRIPE_SECRET_KEY or not session_id:
+        return {"ok": "skipped"}
+    stripe.api_key = STRIPE_SECRET_KEY
+    session = stripe.checkout.Session.retrieve(session_id)
+    data = session.to_dict() if hasattr(session, "to_dict") else dict(session)
+    return _apply_checkout_or_subscription("checkout.session.completed", data)
+
+
+def _apply_checkout_or_subscription(etype: str, data: dict) -> dict[str, str]:
     if etype in {
         "checkout.session.completed",
         "customer.subscription.created",
@@ -155,7 +170,7 @@ def handle_webhook(payload: bytes, signature: str | None) -> dict[str, str]:
                 ),
             )
             logger.info("Plan %s ON for guild %s via %s", tier, guild_id, etype)
-            return {"ok": "premium_on", "guild_id": guild_id, "tier": tier}
+            return {"ok": "premium_on", "guild_id": str(guild_id), "tier": tier}
 
     if etype in {
         "customer.subscription.deleted",
@@ -163,10 +178,9 @@ def handle_webhook(payload: bytes, signature: str | None) -> dict[str, str]:
     }:
         guild_id = _guild_from_object(data)
         if etype == "customer.subscription.deleted" and guild_id:
-            # Lifetime purchases are protected inside set_premium
             settings_store.set_premium(int(guild_id), False)
             logger.info("Premium OFF for guild %s (if not lifetime)", guild_id)
-            return {"ok": "premium_off", "guild_id": guild_id}
+            return {"ok": "premium_off", "guild_id": str(guild_id)}
 
     return {"ok": "ignored", "type": etype}
 
