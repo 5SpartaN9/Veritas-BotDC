@@ -39,6 +39,12 @@
 {% if canceled %}
 <article class="notice">Checkout canceled. You can try again anytime.</article>
 {% endif %}
+{% if switched_free %}
+<article class="notice ok">This server is now on Free. Paid subscription was canceled if one existed.</article>
+{% endif %}
+{% if switch_error %}
+<article class="notice bad">Could not switch to Free (Lifetime stays forever, or Stripe cancel failed). Try Manage billing.</article>
+{% endif %}
 
 <section class="plans-grid three compact">
   <article class="plan-card {% if plan.plan == 'free' %}current{% endif %}">
@@ -49,6 +55,20 @@
       <li>{{ item }}</li>
       {% endfor %}
     </ul>
+    <div class="pay-actions">
+      {% if is_lifetime %}
+      <p class="plan-note">Ultra Lifetime cannot be downgraded.</p>
+      {% elif plan.plan != 'free' %}
+      <form
+        method="post"
+        action="/dashboard/{{ guild.id }}/switch-free"
+        class="pay-form"
+        onsubmit="return confirm('Switch this server to Free now? Any paid subscription will be canceled.');"
+      >
+        <button class="btn btn-ghost" type="submit">Switch to Free</button>
+      </form>
+      {% endif %}
+    </div>
   </article>
   <article class="plan-card accent {% if plan.plan in ['premium', 'trial'] %}current{% endif %}">
     <h2>{% if plan.plan == "trial" %}Premium / Demo{% else %}Premium{% endif %}</h2>
@@ -73,6 +93,20 @@
         <input type="hidden" name="tier" value="premium" />
         <button class="btn" type="submit">Get Premium · {{ regional_premium_price }}</button>
       </form>
+      {% elif plan.plan == 'premium' and not plan.is_trial %}
+      <form method="post" action="/dashboard/{{ guild.id }}/billing">
+        <button class="btn btn-ghost" type="submit">Manage billing</button>
+      </form>
+      <form
+        method="post"
+        action="/dashboard/{{ guild.id }}/switch-free"
+        class="pay-form"
+        onsubmit="return confirm('Cancel Premium and switch to Free now?');"
+      >
+        <button class="btn btn-ghost" type="submit">Switch to Free</button>
+      </form>
+      {% elif payments_enabled and plan.plan == 'ultra' and not is_lifetime %}
+      <p class="plan-note">To move Ultra → Premium: cancel Ultra first (Switch to Free), then buy Premium.</p>
       {% endif %}
       {% if paypal_url and plan.plan not in ['premium', 'ultra'] %}
       <a class="btn btn-ghost" href="{{ paypal_url }}" target="_blank" rel="noreferrer">PayPal</a>

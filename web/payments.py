@@ -113,6 +113,30 @@ def create_billing_portal(*, customer_id: str, guild_id: str) -> str:
     return portal.url
 
 
+def cancel_subscription_to_free(guild_id: int) -> dict[str, str]:
+    """Cancel Stripe subscription (if any) and set the guild to Free."""
+    data = settings_store.get_guild_plan(guild_id)
+    if data.get("lifetime"):
+        raise RuntimeError("Ultra Lifetime cannot be downgraded")
+
+    sub_id = data.get("stripe_subscription_id")
+    if sub_id and STRIPE_SECRET_KEY:
+        stripe.api_key = STRIPE_SECRET_KEY
+        try:
+            stripe.Subscription.cancel(str(sub_id))
+        except Exception as exc:
+            # Fallback for older stripe SDK names / already-canceled subs.
+            logger.warning("Stripe cancel failed for %s: %s", sub_id, exc)
+            try:
+                stripe.Subscription.delete(str(sub_id))
+            except Exception as exc2:
+                logger.warning("Stripe delete failed for %s: %s", sub_id, exc2)
+
+    if not settings_store.clear_plan_to_free(guild_id):
+        raise RuntimeError("Could not switch this server to Free")
+    return {"ok": "free", "guild_id": str(guild_id)}
+
+
 def handle_webhook(payload: bytes, signature: str | None) -> dict[str, str]:
     stripe.api_key = STRIPE_SECRET_KEY
     secret = (STRIPE_WEBHOOK_SECRET or "").strip()

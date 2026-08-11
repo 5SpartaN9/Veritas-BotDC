@@ -46,6 +46,7 @@ from web.config import (
 from web.discord_api import fetch_bot_guild_ids, fetch_guild_channels
 from web.payments import (
     activate_from_checkout_session,
+    cancel_subscription_to_free,
     create_billing_portal,
     create_checkout_session,
     handle_webhook,
@@ -360,6 +361,8 @@ async def _render_guild_dashboard(
             "saved": request.query_params.get("saved") == "1",
             "paid": request.query_params.get("paid") == "1",
             "canceled": request.query_params.get("canceled") == "1",
+            "switched_free": request.query_params.get("switched") == "free",
+            "switch_error": request.query_params.get("switch_error"),
             "free_features": FREE_FEATURES,
             "premium_features": PREMIUM_FEATURES,
             "ultra_features": ULTRA_FEATURES,
@@ -438,6 +441,28 @@ async def billing_portal(request: Request, guild_id: str):
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Stripe error: {exc}") from exc
     return RedirectResponse(url, status_code=303)
+
+
+@app.post("/dashboard/{guild_id}/switch-free")
+async def switch_to_free(request: Request, guild_id: str):
+    session_data = current_session(request)
+    if not session_data or not session_data.get("user"):
+        return RedirectResponse("/auth/login", status_code=303)
+
+    guilds = session_data.get("guilds") or []
+    guild = next((g for g in guilds if str(g.get("id")) == guild_id), None)
+    if not guild or not _can_manage(guild):
+        raise HTTPException(status_code=403, detail="No access")
+
+    try:
+        cancel_subscription_to_free(int(guild_id))
+    except Exception as exc:
+        print(f"[billing] switch-free failed guild={guild_id}: {exc!r}")
+        return RedirectResponse(
+            f"/dashboard/{guild_id}?switch_error=1",
+            status_code=303,
+        )
+    return RedirectResponse(f"/dashboard/{guild_id}?switched=free", status_code=303)
 
 
 @app.post("/webhooks/stripe")

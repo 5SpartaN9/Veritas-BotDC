@@ -170,6 +170,32 @@ class SettingsStore:
             )
             return str(value) if value else None
 
+    def get_stripe_subscription(self, guild_id: int) -> str | None:
+        with self._lock:
+            self._load()
+            value = self._data["guilds"].get(str(guild_id), {}).get(
+                "stripe_subscription_id"
+            )
+            return str(value) if value else None
+
+    def clear_plan_to_free(self, guild_id: int) -> bool:
+        """Downgrade to Free. Lifetime purchases are never cleared here."""
+        with self._lock:
+            self._load()
+            guild = self._data["guilds"].setdefault(str(guild_id), {})
+            if guild.get("lifetime"):
+                return False
+            guild["premium"] = False
+            guild["ultra"] = False
+            guild["plan"] = "free"
+            guild.pop("ultra_trial", None)
+            guild.pop("trial_started", None)
+            guild.pop("trial_ends", None)
+            guild.pop("stripe_subscription_id", None)
+            # keep stripe_customer_id so billing portal still works later
+            self._save()
+            return True
+
     def get_guild_plan(self, guild_id: int) -> dict:
         with self._lock:
             self._load()

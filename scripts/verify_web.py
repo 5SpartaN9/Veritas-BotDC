@@ -79,6 +79,8 @@ def main() -> None:
         saved=False,
         paid=False,
         canceled=False,
+        switched_free=False,
+        switch_error=None,
         free_features=FREE_FEATURES,
         premium_features=PREMIUM_FEATURES,
         ultra_features=ULTRA_FEATURES,
