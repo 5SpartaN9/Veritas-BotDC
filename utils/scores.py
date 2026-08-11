@@ -4,7 +4,9 @@ import json
 from pathlib import Path
 from threading import Lock
 
-SCORES_PATH = Path(__file__).resolve().parent.parent / "data" / "scores.json"
+from utils.paths import DATA_DIR
+
+SCORES_PATH = DATA_DIR / "scores.json"
 
 
 class ScoreStore:

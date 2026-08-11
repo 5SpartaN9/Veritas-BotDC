@@ -6,7 +6,9 @@ import time
 from pathlib import Path
 from threading import Lock
 
-CACHE_PATH = Path(__file__).resolve().parent.parent / "data" / "cache.json"
+from utils.paths import DATA_DIR
+
+CACHE_PATH = DATA_DIR / "cache.json"
 DEFAULT_TTL = 60 * 60 * 24  # 24h
 MAX_ENTRIES = 500
 

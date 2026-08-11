@@ -4,7 +4,9 @@ import json
 from pathlib import Path
 from threading import Lock
 
-SETTINGS_PATH = Path(__file__).resolve().parent.parent / "data" / "settings.json"
+from utils.paths import DATA_DIR
+
+SETTINGS_PATH = DATA_DIR / "settings.json"
 
 DEFAULT_AUTOCHAT = "mention"
 DEFAULT_LANGUAGE = "auto"

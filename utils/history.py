@@ -7,7 +7,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 from threading import Lock
 
-HISTORY_PATH = Path(__file__).resolve().parent.parent / "data" / "history.json"
+from utils.paths import DATA_DIR
+
+HISTORY_PATH = DATA_DIR / "history.json"
 MAX_ENTRIES = 200
 
 
