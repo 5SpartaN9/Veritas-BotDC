@@ -41,7 +41,80 @@ Ustaw też:
 
 `GEMINI_MODEL` możesz zostawić: `gemini-flash-latest`
 
-Stripe (płatności) możesz dodać później.
+---
+
+## Krok 3b — Płatności Stripe (Premium / Ultra / Lifetime)
+
+### A. Konto i klucze
+1. Załóż / zaloguj: https://dashboard.stripe.com
+2. Na start możesz zostać w trybie **Test** (przełącznik „Test mode”).
+3. **Developers** → **API keys**:
+   - `Secret key` (`sk_test_…` albo później `sk_live_…`) → `STRIPE_SECRET_KEY`
+   - `Publishable key` (`pk_test_…` / `pk_live_…`) → `STRIPE_PUBLISHABLE_KEY`
+
+### B. Trzy ceny (Products)
+Wejdź **Product catalog** → **Add product** i zrób 3 produkty:
+
+| Produkt | Typ ceny | Kwota US (lista) | Env na Render |
+|---------|----------|------------------|---------------|
+| Veritas Premium | **Recurring** / month | **$5.99** | `STRIPE_PRICE_ID` |
+| Veritas Ultra | **Recurring** / month | **$16.99** | `STRIPE_PRICE_ID_ULTRA` |
+| Veritas Ultra Lifetime | **One-time** | **$79** | `STRIPE_PRICE_ID_ULTRA_LIFETIME` |
+
+Po utworzeniu skopiuj **Price ID** (`price_…`), nie Product ID.
+
+Regionalne ceny (PLN, EUR…) Stripe może doliczyć Adaptive Pricing / lokalne Prices później.
+Na start wystarczy USD — checkout i tak działa międzynarodowo.
+
+### C. Webhook (żeby po płatności włączył się plan)
+1. **Developers** → **Webhooks** → **Add endpoint**
+2. URL:
+   `https://veritas-zx7p.onrender.com/webhooks/stripe`
+   (jeśli masz inny adres Render — wstaw swój)
+3. Zaznacz eventy:
+   - `checkout.session.completed`
+   - `customer.subscription.created`
+   - `customer.subscription.updated`
+   - `customer.subscription.deleted`
+   - `invoice.payment_failed`
+4. Otwórz endpoint → **Signing secret** (`whsec_…`) → `STRIPE_WEBHOOK_SECRET`
+
+### D. Wpisz na Render (Environment)
+W usłudze **veritas** dodaj / uzupełnij:
+
+- `STRIPE_SECRET_KEY`
+- `STRIPE_PUBLISHABLE_KEY`
+- `STRIPE_WEBHOOK_SECRET`
+- `STRIPE_PRICE_ID`
+- `STRIPE_PRICE_ID_ULTRA`
+- `STRIPE_PRICE_ID_ULTRA_LIFETIME`
+- (opcjonalnie etykiety)
+  - `PREMIUM_PRICE_LABEL` = `$5.99 / month`
+  - `ULTRA_PRICE_LABEL` = `$16.99 / month`
+  - `ULTRA_LIFETIME_PRICE_LABEL` = `$79 once · forever`
+
+Zapisz → poczekaj na redeploy (**Live**).
+
+### E. Customer Portal (anulowanie subskrypcji)
+1. Stripe → **Settings** → **Billing** → **Customer portal**
+2. Włącz portal (cancel / update payment method)
+3. Zapisz
+
+### F. Test
+1. Wejdź na panel: `https://veritas-zx7p.onrender.com/dashboard`
+2. Zaloguj Discord → wybierz serwer
+3. Kliknij **Get Premium** / **Get Ultra** / **Ultra Lifetime**
+4. W **Test mode** użyj karty: `4242 4242 4242 4242`, dowolna przyszła data, dowolne CVC
+5. Po powrocie plan powinien być **Active** (webhook)
+6. Jak nie — Render → **Logs** + Stripe → Webhook → **Attempts**
+
+### G. Na prawdziwe pieniądze
+1. Wyłącz **Test mode**
+2. Utwórz te same 3 Prices w trybie **Live** (albo aktywuj konto i skopiuj live keys)
+3. Podmień na Render wszystkie `sk_live_`, `pk_live_`, `whsec_` i `price_…` z Live
+4. Webhook URL ten sam, ale osobny endpoint w Live mode
+
+Stripe (płatności) — szczegóły powyżej.
 
 ## Krok 4 — Discord Developer Portal
 1. Wejdź w swoją aplikację Discord → **OAuth2** → Redirects

@@ -40,9 +40,13 @@ services:
         sync: false
       - key: STRIPE_PRICE_ID_ULTRA
         sync: false
+      - key: STRIPE_PRICE_ID_ULTRA_LIFETIME
+        sync: false
       - key: PREMIUM_PRICE_LABEL
-        value: "$4.99 / month"
+        value: "$5.99 / month"
       - key: ULTRA_PRICE_LABEL
-        value: "$14.99 / month"
+        value: "$16.99 / month"
+      - key: ULTRA_LIFETIME_PRICE_LABEL
+        value: "$79 once · forever"
       - key: PAYPAL_ME_URL
         sync: false
