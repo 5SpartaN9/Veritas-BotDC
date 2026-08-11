@@ -10,9 +10,11 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 
 from web.config import (
+    ADMINISTRATOR,
     DISCORD_CLIENT_ID,
     DISCORD_CLIENT_SECRET,
     DISCORD_REDIRECT_URI,
+    MANAGE_GUILD,
     OAUTH_AUTHORIZE,
     OAUTH_TOKEN,
     SESSION_SECRET,
@@ -24,6 +26,31 @@ _state_s = URLSafeTimedSerializer(SESSION_SECRET, salt="veritas-oauth-state")
 _session_s = URLSafeTimedSerializer(SESSION_SECRET, salt="veritas-user-session")
 
 COOKIE_NAME = "veritas_session"
+MAX_SESSION_GUILDS = 60
+
+
+def _can_manage(guild: dict) -> bool:
+    try:
+        perms = int(guild.get("permissions", 0))
+    except (TypeError, ValueError):
+        return False
+    return bool(perms & ADMINISTRATOR or perms & MANAGE_GUILD)
+
+
+def _slim_guild(guild: dict) -> dict[str, Any]:
+    return {
+        "id": str(guild.get("id")),
+        "name": guild.get("name") or "Server",
+        "icon": guild.get("icon"),
+        "owner": bool(guild.get("owner")),
+        "permissions": str(guild.get("permissions", "0")),
+    }
+
+
+def _session_guilds(guilds: list[dict]) -> list[dict[str, Any]]:
+    managed = [_slim_guild(g) for g in guilds if _can_manage(g)]
+    managed.sort(key=lambda g: str(g.get("name", "")).lower())
+    return managed[:MAX_SESSION_GUILDS]
 
 
 def _make_state() -> str:
@@ -166,17 +193,18 @@ async def callback(
             "username": user.get("global_name") or user.get("username"),
             "avatar": user.get("avatar"),
         },
-        "guilds": guilds,
-        "access_token": access_token,
+        # Keep cookie small: only manageable guilds, no OAuth token.
+        "guilds": _session_guilds(guilds),
     }
-    print(f"[auth] login ok user={payload['user']['username']} guilds={len(guilds)}")
+    print(
+        f"[auth] login ok user={payload['user']['username']} "
+        f"guilds={len(payload['guilds'])}/{len(guilds)}"
+    )
 
     response = RedirectResponse("/dashboard", status_code=303)
     _set_session_cookie(response, payload)
-    # Also mirror into Starlette session for compatibility
     request.session["user"] = payload["user"]
-    request.session["guilds"] = guilds
-    request.session["access_token"] = access_token
+    request.session["guilds"] = payload["guilds"]
     return response
 
 
@@ -205,5 +233,4 @@ def current_session(request: Request) -> dict[str, Any] | None:
     return {
         "user": user,
         "guilds": request.session.get("guilds") or [],
-        "access_token": request.session.get("access_token"),
     }

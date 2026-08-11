@@ -16,12 +16,13 @@ async def discord_api(
     json: dict | None = None,
     data: dict | None = None,
     headers: dict | None = None,
+    timeout: float = 8.0,
 ) -> Any:
     hdrs = {
         "Authorization": f"{token_type} {token}",
         **(headers or {}),
     }
-    async with httpx.AsyncClient(timeout=30.0) as client:
+    async with httpx.AsyncClient(timeout=timeout) as client:
         response = await client.request(
             method,
             f"{API_BASE}{path}",

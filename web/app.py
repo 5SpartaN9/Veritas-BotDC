@@ -96,6 +96,11 @@ def _managed_guilds(session_data: dict, bot_guild_ids: set[str]) -> list[dict]:
     return result
 
 
+@app.get("/health")
+async def health() -> JSONResponse:
+    return JSONResponse({"ok": True, "service": "veritas"})
+
+
 @app.get("/", response_class=HTMLResponse)
 async def home_page(
     request: Request,
@@ -185,20 +190,39 @@ async def guild_dashboard(request: Request, guild_id: str):
     if not session_data or not session_data.get("user"):
         return RedirectResponse("/auth/login", status_code=303)
 
+    try:
+        return await _render_guild_dashboard(request, session_data, guild_id)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        # Never let a panel crash take down the request with a blank 502.
+        print(f"[dashboard] guild page error guild_id={guild_id}: {exc!r}")
+        return HTMLResponse(
+            "<h1>Dashboard temporarily unavailable</h1>"
+            "<p>Please refresh in a few seconds.</p>"
+            "<p><a href='/dashboard'>Back to servers</a></p>",
+            status_code=503,
+        )
+
+
+async def _render_guild_dashboard(
+    request: Request,
+    session_data: dict,
+    guild_id: str,
+):
     user = session_data["user"]
     guilds = session_data.get("guilds") or []
     guild = next((g for g in guilds if str(g.get("id")) == guild_id), None)
     if not guild or not _can_manage(guild):
         raise HTTPException(status_code=403, detail="No access to this server")
 
-    bot_guild_ids: set[str] = set()
     bot_in = False
     channels = []
     try:
         bot_guild_ids = await fetch_bot_guild_ids()
         bot_in = guild_id in bot_guild_ids
-    except Exception:
-        bot_guild_ids = set()
+    except Exception as exc:
+        print(f"[dashboard] bot guild fetch failed: {exc!r}")
         bot_in = False
 
     # Fallback unlock if Stripe webhooks failed but checkout succeeded
@@ -218,20 +242,23 @@ async def guild_dashboard(request: Request, guild_id: str):
             plan = get_plan_info(int(guild_id))
         try:
             channels = await fetch_guild_channels(guild_id)
-        except Exception:
+        except Exception as exc:
+            print(f"[dashboard] channel fetch failed: {exc!r}")
             channels = []
 
     language = settings_store.get_language(int(guild_id))
     guild_plan_data = settings_store.get_guild_plan(int(guild_id))
+    modes = settings_store.channel_modes([int(ch["id"]) for ch in channels])
     channel_settings = []
     for ch in channels:
-        cid = int(ch["id"])
+        cid = str(ch["id"])
+        mode = modes.get(cid, {})
         channel_settings.append(
             {
                 "id": ch["id"],
                 "name": ch.get("name", "channel"),
-                "autochat": settings_store.get_autochat(cid),
-                "watchlist": settings_store.get_watchlist(cid),
+                "autochat": mode.get("autochat", "mention"),
+                "watchlist": bool(mode.get("watchlist", False)),
             }
         )
 

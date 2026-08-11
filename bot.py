@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import os
 
 import discord
 from discord.ext import commands
@@ -12,12 +13,20 @@ logging.basicConfig(
 )
 logger = logging.getLogger("veritas")
 
+# Music (yt-dlp/voice) is heavy; keep it off on small hosts unless enabled.
+ENABLE_MUSIC = os.getenv("VERITAS_ENABLE_MUSIC", "0").strip().lower() in {
+    "1",
+    "true",
+    "yes",
+    "on",
+}
+
 
 class VeritasBot(commands.Bot):
     def __init__(self) -> None:
         intents = discord.Intents.default()
         intents.message_content = True
-        intents.members = True
+        # Do not enable members intent — it caches every user and blows RAM.
 
         super().__init__(
             command_prefix="!",
@@ -27,7 +36,11 @@ class VeritasBot(commands.Bot):
 
     async def setup_hook(self) -> None:
         await self.load_extension("cogs.ai_commands")
-        await self.load_extension("cogs.music")
+        if ENABLE_MUSIC:
+            await self.load_extension("cogs.music")
+            logger.info("Music cog enabled")
+        else:
+            logger.info("Music cog disabled (set VERITAS_ENABLE_MUSIC=1 to enable)")
         await self.load_extension("cogs.utility")
         await self.load_extension("cogs.autochat")
         await self.tree.sync()

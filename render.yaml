@@ -5,6 +5,7 @@ services:
     plan: starter
     buildCommand: pip install -r requirements.txt
     startCommand: bash scripts/start_all.sh
+    healthCheckPath: /health
     disk:
       name: veritas-data
       mountPath: /var/data
@@ -14,6 +15,8 @@ services:
         value: "3.12.0"
       - key: DATA_DIR
         value: /var/data
+      - key: VERITAS_ENABLE_MUSIC
+        value: "0"
       - key: DISCORD_TOKEN
         sync: false
       - key: DISCORD_CLIENT_ID

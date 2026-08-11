@@ -92,6 +92,20 @@ class SettingsStore:
                 self._data["channels"].get(str(channel_id), {}).get("watchlist", False)
             )
 
+    def channel_modes(self, channel_ids: list[int]) -> dict[str, dict[str, object]]:
+        """Batch-read autochat/watchlist for many channels under one lock."""
+        with self._lock:
+            self._load()
+            out: dict[str, dict[str, object]] = {}
+            for channel_id in channel_ids:
+                key = str(channel_id)
+                row = self._data["channels"].get(key, {})
+                out[key] = {
+                    "autochat": row.get("autochat", DEFAULT_AUTOCHAT),
+                    "watchlist": bool(row.get("watchlist", False)),
+                }
+            return out
+
     def set_watchlist(self, channel_id: int, enabled: bool) -> None:
         with self._lock:
             self._load()
