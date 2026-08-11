@@ -485,6 +485,152 @@ code {
   color: var(--accent-2);
 }
 
+.reviews-summary {
+  margin: 0.85rem 0 0;
+  color: var(--accent-2);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.reviews-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 22rem) minmax(0, 1fr);
+  gap: 2.5rem;
+  align-items: start;
+}
+
+.review-form {
+  display: grid;
+  gap: 1rem;
+  padding-top: 0.25rem;
+}
+
+.review-form label {
+  display: grid;
+  gap: 0.45rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.review-form input,
+.review-form textarea {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 0;
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--ink);
+  font: inherit;
+  padding: 0.75rem 0.85rem;
+}
+
+.review-form textarea {
+  resize: vertical;
+  min-height: 7rem;
+}
+
+.review-form input:focus,
+.review-form textarea:focus {
+  outline: 1px solid rgba(110, 196, 190, 0.55);
+  border-color: rgba(110, 196, 190, 0.45);
+}
+
+.star-field {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.star-field legend {
+  margin-bottom: 0.45rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.star-picker {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.star-btn {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: rgba(245, 247, 250, 0.22);
+  font-size: 1.65rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0.15rem;
+  transition: color 0.15s ease, transform 0.15s ease;
+}
+
+.star-btn.on,
+.star-btn:hover,
+.star-btn:focus-visible {
+  color: var(--accent-2);
+}
+
+.star-btn:hover,
+.star-btn:focus-visible {
+  transform: translateY(-1px);
+}
+
+.review-status {
+  margin: 0;
+  min-height: 1.25rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.review-status.ok {
+  color: var(--accent);
+}
+
+.review-status.err {
+  color: #e58b8b;
+}
+
+.reviews-list {
+  display: grid;
+  gap: 0;
+  border-top: 1px solid var(--line);
+}
+
+.review-item {
+  padding: 1.15rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.review-item-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  margin-bottom: 0.45rem;
+}
+
+.review-item strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.review-stars {
+  color: var(--accent-2);
+  letter-spacing: 0.08em;
+  font-size: 0.95rem;
+}
+
+.review-item p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+.reviews-list .muted {
+  margin: 1rem 0 0;
+  color: var(--muted);
+}
+
 .note-from-maker {
   padding-top: 2rem;
   padding-bottom: 2rem;
@@ -707,6 +853,11 @@ code {
 
   .lifetime-band {
     grid-template-columns: 1fr;
+  }
+
+  .reviews-layout {
+    grid-template-columns: 1fr;
+    gap: 1.75rem;
   }
 }
 

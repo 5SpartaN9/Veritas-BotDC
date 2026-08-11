@@ -210,3 +210,137 @@ function initRegionalPricing() {
 }
 
 initRegionalPricing();
+
+/* --- Reviews (stored on Render API) --- */
+const REVIEWS_API =
+  location.hostname.includes("onrender.com") || location.hostname === "127.0.0.1"
+    ? "/api/reviews"
+    : "https://veritas-zx7p.onrender.com/api/reviews";
+
+function starsHtml(n) {
+  const filled = Math.max(0, Math.min(5, Number(n) || 0));
+  return "★".repeat(filled) + "☆".repeat(5 - filled);
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function renderReviews(payload) {
+  const list = document.getElementById("reviews-list");
+  const summary = document.getElementById("reviews-summary");
+  if (!list) return;
+
+  const rows = payload.reviews || [];
+  if (summary) {
+    if (payload.count > 0 && payload.average != null) {
+      summary.hidden = false;
+      summary.textContent = `${payload.average} / 5 average · ${payload.count} review${
+        payload.count === 1 ? "" : "s"
+      }`;
+    } else {
+      summary.hidden = true;
+    }
+  }
+
+  if (!rows.length) {
+    list.innerHTML = `<p class="muted">No reviews yet — be the first.</p>`;
+    return;
+  }
+
+  list.innerHTML = rows
+    .map(
+      (r) => `
+      <article class="review-item">
+        <div class="review-item-top">
+          <strong>${escapeHtml(r.name)}</strong>
+          <span class="review-stars" aria-label="${r.stars} out of 5 stars">${starsHtml(
+            r.stars
+          )}</span>
+        </div>
+        <p>${escapeHtml(r.text)}</p>
+      </article>`
+    )
+    .join("");
+}
+
+async function loadReviews() {
+  const list = document.getElementById("reviews-list");
+  if (!list) return;
+  try {
+    const res = await fetch(REVIEWS_API, { headers: { Accept: "application/json" } });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    renderReviews(await res.json());
+  } catch (err) {
+    list.innerHTML = `<p class="muted">Reviews are temporarily unavailable.</p>`;
+  }
+}
+
+function setStarSelection(value) {
+  const hidden = document.getElementById("review-stars");
+  const buttons = document.querySelectorAll(".star-btn");
+  if (hidden) hidden.value = String(value);
+  buttons.forEach((btn) => {
+    const n = Number(btn.dataset.stars);
+    btn.classList.toggle("on", n <= value);
+    btn.setAttribute("aria-checked", n === value ? "true" : "false");
+  });
+}
+
+function initReviewForm() {
+  const form = document.getElementById("review-form");
+  if (!form) return;
+
+  setStarSelection(5);
+  document.querySelectorAll(".star-btn").forEach((btn) => {
+    btn.addEventListener("click", () => setStarSelection(Number(btn.dataset.stars)));
+  });
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const status = document.getElementById("review-status");
+    const name = document.getElementById("review-name")?.value || "";
+    const stars = Number(document.getElementById("review-stars")?.value || 0);
+    const text = document.getElementById("review-text")?.value || "";
+    const submitBtn = form.querySelector('button[type="submit"]');
+
+    if (status) {
+      status.className = "review-status";
+      status.textContent = "Sending…";
+    }
+    if (submitBtn) submitBtn.disabled = true;
+
+    try {
+      const res = await fetch(REVIEWS_API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({ name, stars, text }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.detail || `Could not post (${res.status})`);
+      }
+      form.reset();
+      setStarSelection(5);
+      if (status) {
+        status.className = "review-status ok";
+        status.textContent = "Thanks — your review is live.";
+      }
+      await loadReviews();
+    } catch (err) {
+      if (status) {
+        status.className = "review-status err";
+        status.textContent = err.message || "Could not post review.";
+      }
+    } finally {
+      if (submitBtn) submitBtn.disabled = false;
+    }
+  });
+}
+
+initReviewForm();
+loadReviews();

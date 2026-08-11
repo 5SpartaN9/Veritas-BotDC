@@ -16,7 +16,7 @@
       rel="stylesheet"
     />
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-    <link rel="stylesheet" href="styles.css?v=10" />
+    <link rel="stylesheet" href="styles.css?v=11" />
   </head>
   <body>
     <div class="noise" aria-hidden="true"></div>
@@ -27,6 +27,7 @@
         <a href="#features">Features</a>
         <a href="#commands">Commands</a>
         <a href="#pricing">Pricing</a>
+        <a href="#reviews">Reviews</a>
         <a href="https://veritas-zx7p.onrender.com/dashboard">Dashboard</a>
       </nav>
       <a class="btn btn-small" href="https://veritas-zx7p.onrender.com/dashboard">Dashboard</a>
@@ -251,6 +252,70 @@
         </div>
       </section>
 
+      <section class="section section-alt" id="reviews">
+        <div class="section-head reveal">
+          <h2>What communities say.</h2>
+          <p>
+            Leave a short review after trying Veritas — stars help others decide
+            faster.
+          </p>
+          <p id="reviews-summary" class="reviews-summary" hidden></p>
+        </div>
+
+        <div class="reviews-layout reveal">
+          <form id="review-form" class="review-form" novalidate>
+            <label>
+              Your name
+              <input
+                id="review-name"
+                name="name"
+                type="text"
+                maxlength="40"
+                autocomplete="nickname"
+                placeholder="Alex"
+                required
+              />
+            </label>
+
+            <fieldset class="star-field">
+              <legend>Rating</legend>
+              <div
+                id="star-picker"
+                class="star-picker"
+                role="radiogroup"
+                aria-label="Star rating"
+              >
+                <button type="button" class="star-btn" data-stars="1" aria-label="1 star">★</button>
+                <button type="button" class="star-btn" data-stars="2" aria-label="2 stars">★</button>
+                <button type="button" class="star-btn" data-stars="3" aria-label="3 stars">★</button>
+                <button type="button" class="star-btn" data-stars="4" aria-label="4 stars">★</button>
+                <button type="button" class="star-btn" data-stars="5" aria-label="5 stars">★</button>
+              </div>
+              <input id="review-stars" name="stars" type="hidden" value="5" />
+            </fieldset>
+
+            <label>
+              Your review
+              <textarea
+                id="review-text"
+                name="text"
+                maxlength="500"
+                rows="4"
+                placeholder="How did Veritas help your server?"
+                required
+              ></textarea>
+            </label>
+
+            <button class="btn" type="submit">Post review</button>
+            <p id="review-status" class="review-status" role="status" aria-live="polite"></p>
+          </form>
+
+          <div id="reviews-list" class="reviews-list" aria-live="polite">
+            <p class="muted">Loading reviews…</p>
+          </div>
+        </div>
+      </section>
+
       <section class="section note-from-maker" id="maker">
         <div class="maker-card reveal">
           <p class="maker-kicker">A note from the maker</p>
@@ -294,6 +359,7 @@
         <a href="#features">Features</a>
         <a href="#commands">Commands</a>
         <a href="#pricing">Pricing</a>
+        <a href="#reviews">Reviews</a>
         <a href="https://veritas-zx7p.onrender.com/dashboard">Dashboard</a>
         <a href="#maker">From the maker</a>
         <a href="terms.html">Terms</a>
@@ -304,6 +370,6 @@
       <p class="fineprint">Not affiliated with Discord Inc. Use responsibly.</p>
     </footer>
 
-    <script src="script.js?v=8"></script>
+    <script src="script.js?v=9"></script>
   </body>
 </html>

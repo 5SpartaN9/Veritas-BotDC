@@ -4,6 +4,7 @@ import sys
 from pathlib import Path
 
 from fastapi import FastAPI, Form, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -22,6 +23,7 @@ from utils.plans import (
     get_plan_info,
     has_premium_features,
 )
+from utils.reviews import review_store
 from utils.settings import settings_store
 from web.auth import current_session, current_user, router as auth_router
 from web.config import (
@@ -35,6 +37,7 @@ from web.config import (
     PREMIUM_PRICE_LABEL,
     PUBLIC_BASE_URL,
     SESSION_SECRET,
+    SITE_URL,
     ULTRA_LIFETIME_PRICE_LABEL,
     ULTRA_PRICE_LABEL,
     WEB_HOST,
@@ -54,6 +57,18 @@ WEB_DIR = Path(__file__).resolve().parent
 SITE_DIR = ROOT / "website"
 
 app = FastAPI(title="Veritas Dashboard")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        SITE_URL.rstrip("/"),
+        "https://5spartan9.github.io",
+        "http://127.0.0.1:8000",
+        "http://localhost:8000",
+    ],
+    allow_origin_regex=r"https://.*\.github\.io",
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["*"],
+)
 app.add_middleware(
     SessionMiddleware,
     secret_key=SESSION_SECRET,
@@ -100,6 +115,47 @@ def _managed_guilds(session_data: dict, bot_guild_ids: set[str]) -> list[dict]:
 @app.get("/health")
 async def health() -> JSONResponse:
     return JSONResponse({"ok": True, "service": "veritas"})
+
+
+@app.get("/api/reviews")
+async def list_reviews() -> JSONResponse:
+    rows = review_store.list_public()
+    return JSONResponse(
+        {
+            "ok": True,
+            "average": review_store.average_stars(),
+            "count": len(rows),
+            "reviews": rows,
+        }
+    )
+
+
+@app.post("/api/reviews")
+async def create_review(request: Request) -> JSONResponse:
+    try:
+        body = await request.json()
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail="Invalid JSON") from exc
+
+    client = (
+        request.headers.get("cf-connecting-ip")
+        or request.headers.get("x-forwarded-for", "").split(",")[0].strip()
+        or (request.client.host if request.client else "unknown")
+    )
+    try:
+        row = review_store.add(
+            name=str(body.get("name") or ""),
+            stars=int(body.get("stars") or 0),
+            text=str(body.get("text") or ""),
+            client_key=client or "unknown",
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:
+        print(f"[reviews] save failed: {exc!r}")
+        raise HTTPException(status_code=500, detail="Could not save review") from exc
+
+    return JSONResponse({"ok": True, "review": row})
 
 
 @app.get("/", response_class=HTMLResponse)
