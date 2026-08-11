@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -eu
 
-# Start Discord bot in background, then the web panel (same disk / DATA_DIR).
+# Start Discord bot in background, then keep the web panel in foreground.
 python bot.py &
 BOT_PID=$!
 
@@ -10,4 +10,4 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 
-uvicorn web.app:app --host 0.0.0.0 --port "${PORT:-8000}"
+exec uvicorn web.app:app --host 0.0.0.0 --port "${PORT:-8000}"

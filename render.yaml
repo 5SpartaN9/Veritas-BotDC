@@ -3,7 +3,7 @@ services:
     name: veritas
     runtime: python
     plan: starter
-    buildCommand: pip install -r requirements.txt && chmod +x scripts/start_all.sh
+    buildCommand: pip install -r requirements.txt
     startCommand: bash scripts/start_all.sh
     disk:
       name: veritas-data
