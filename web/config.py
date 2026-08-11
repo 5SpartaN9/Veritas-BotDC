@@ -29,11 +29,10 @@ PANEL_URL = os.getenv("PANEL_URL", f"{PUBLIC_BASE_URL}/dashboard")
 STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "")
 STRIPE_PUBLISHABLE_KEY = os.getenv("STRIPE_PUBLISHABLE_KEY", "")
 STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")
-STRIPE_PRICE_ID = os.getenv("STRIPE_PRICE_ID", "")  # Premium recurring Price ID
-STRIPE_PRICE_ID_ULTRA = os.getenv("STRIPE_PRICE_ID_ULTRA", "")  # Ultra recurring Price ID
-STRIPE_PRICE_ID_ULTRA_LIFETIME = os.getenv(
-    "STRIPE_PRICE_ID_ULTRA_LIFETIME", ""
-)  # Ultra one-time Price ID (~$79 US reference)
+# Legacy USD defaults (still supported)
+STRIPE_PRICE_ID = os.getenv("STRIPE_PRICE_ID", "")  # Premium USD
+STRIPE_PRICE_ID_ULTRA = os.getenv("STRIPE_PRICE_ID_ULTRA", "")
+STRIPE_PRICE_ID_ULTRA_LIFETIME = os.getenv("STRIPE_PRICE_ID_ULTRA_LIFETIME", "")
 PREMIUM_PRICE_LABEL = os.getenv("PREMIUM_PRICE_LABEL", "$5.99 / month")
 ULTRA_PRICE_LABEL = os.getenv("ULTRA_PRICE_LABEL", "$16.99 / month")
 ULTRA_LIFETIME_PRICE_LABEL = os.getenv(
@@ -57,4 +56,11 @@ INVITE_URL = (
 MANAGE_GUILD = 0x20
 ADMINISTRATOR = 0x8
 
-PAYMENTS_ENABLED = bool(STRIPE_SECRET_KEY and STRIPE_PRICE_ID)
+PAYMENTS_ENABLED = bool(
+    STRIPE_SECRET_KEY
+    and (
+        STRIPE_PRICE_ID
+        or os.getenv("STRIPE_PRICE_PREMIUM_USD", "")
+        or os.getenv("STRIPE_PRICE_PREMIUM_PLN", "")
+    )
+)

@@ -8,11 +8,14 @@ import stripe
 from utils.settings import settings_store
 from web.config import (
     PUBLIC_BASE_URL,
-    STRIPE_PRICE_ID,
-    STRIPE_PRICE_ID_ULTRA,
-    STRIPE_PRICE_ID_ULTRA_LIFETIME,
     STRIPE_SECRET_KEY,
     STRIPE_WEBHOOK_SECRET,
+)
+from web.stripe_catalog import (
+    Currency,
+    Tier,
+    normalize_currency,
+    price_id_for,
 )
 
 logger = logging.getLogger("veritas.payments")
@@ -20,14 +23,13 @@ logger = logging.getLogger("veritas.payments")
 VALID_TIERS = {"premium", "ultra", "ultra_lifetime"}
 
 
-def stripe_ready(tier: str = "premium") -> bool:
+def stripe_ready(tier: str = "premium", currency: str = "USD") -> bool:
     if not STRIPE_SECRET_KEY:
         return False
-    if tier == "ultra_lifetime":
-        return bool(STRIPE_PRICE_ID_ULTRA_LIFETIME)
-    if tier == "ultra":
-        return bool(STRIPE_PRICE_ID_ULTRA or STRIPE_PRICE_ID)
-    return bool(STRIPE_PRICE_ID)
+    if tier not in VALID_TIERS:
+        tier = "premium"
+    cur = normalize_currency(currency)
+    return bool(price_id_for(tier, cur))  # type: ignore[arg-type]
 
 
 def create_checkout_session(
@@ -37,25 +39,17 @@ def create_checkout_session(
     user_id: str,
     user_email: str | None = None,
     tier: str = "premium",
+    currency: str = "USD",
 ) -> str:
     """Return Stripe Checkout URL for Premium, Ultra, or Ultra Lifetime."""
     if tier not in VALID_TIERS:
         tier = "premium"
-    if not stripe_ready(tier):
-        raise RuntimeError("Stripe is not configured")
+    cur: Currency = normalize_currency(currency)
+    if not stripe_ready(tier, cur):
+        raise RuntimeError("Stripe is not configured for this plan/currency")
 
-    if tier == "ultra_lifetime":
-        price_id = STRIPE_PRICE_ID_ULTRA_LIFETIME
-        mode = "payment"
-    elif tier == "ultra" and STRIPE_PRICE_ID_ULTRA:
-        price_id = STRIPE_PRICE_ID_ULTRA
-        mode = "subscription"
-    else:
-        price_id = STRIPE_PRICE_ID
-        mode = "subscription"
-        if tier == "ultra" and not STRIPE_PRICE_ID_ULTRA:
-            tier = "premium"
-
+    price_id = price_id_for(tier, cur)  # type: ignore[arg-type]
+    mode = "payment" if tier == "ultra_lifetime" else "subscription"
     if not price_id:
         raise RuntimeError("Stripe price is not configured")
 
@@ -71,6 +65,7 @@ def create_checkout_session(
         "guild_name": guild_name[:80],
         "discord_user_id": user_id,
         "plan_tier": tier,
+        "currency": cur,
     }
 
     params: dict[str, Any] = {
@@ -88,6 +83,7 @@ def create_checkout_session(
                 "guild_id": guild_id,
                 "discord_user_id": user_id,
                 "plan_tier": tier,
+                "currency": cur,
             }
         }
     else:
@@ -96,6 +92,7 @@ def create_checkout_session(
                 "guild_id": guild_id,
                 "discord_user_id": user_id,
                 "plan_tier": tier,
+                "currency": cur,
             }
         }
     if user_email:

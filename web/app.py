@@ -47,6 +47,7 @@ from web.payments import (
     handle_webhook,
     stripe_ready,
 )
+from web.stripe_catalog import currency_options, label_for
 
 WEB_DIR = Path(__file__).resolve().parent
 SITE_DIR = ROOT / "website"
@@ -251,6 +252,15 @@ async def guild_dashboard(request: Request, guild_id: str):
             "is_paid_premium": plan.plan in {"premium", "ultra"},
             "is_ultra": plan.plan == "ultra",
             "is_lifetime": bool(guild_plan_data.get("lifetime")),
+            "currency_options": currency_options(),
+            "default_currency": "PLN",
+            "price_by_currency": {
+                "premium": {c: label_for("premium", c) for c in ("USD", "EUR", "PLN", "RUB", "CNY")},
+                "ultra": {c: label_for("ultra", c) for c in ("USD", "EUR", "PLN", "RUB", "CNY")},
+                "lifetime": {
+                    c: label_for("ultra_lifetime", c) for c in ("USD", "EUR", "PLN", "RUB", "CNY")
+                },
+            },
         },
     )
 
@@ -260,6 +270,7 @@ async def start_checkout(
     request: Request,
     guild_id: str,
     tier: str = Form("premium"),
+    currency: str = Form("USD"),
 ):
     session_data = current_session(request)
     if not session_data or not session_data.get("user"):
@@ -271,7 +282,7 @@ async def start_checkout(
         raise HTTPException(status_code=403, detail="No access")
     if tier not in {"premium", "ultra", "ultra_lifetime"}:
         tier = "premium"
-    if not stripe_ready(tier):
+    if not stripe_ready(tier, currency):
         raise HTTPException(
             status_code=503,
             detail="Payments are not configured yet. Add Stripe keys to .env",
@@ -285,6 +296,7 @@ async def start_checkout(
             user_id=str(user.get("id")),
             user_email=user.get("email"),
             tier=tier,
+            currency=currency,
         )
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Stripe error: {exc}") from exc

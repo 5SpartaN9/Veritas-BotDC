@@ -305,6 +305,31 @@ a {
   flex-wrap: wrap;
   gap: 0.6rem;
   margin-top: 1rem;
+  align-items: flex-end;
+}
+
+.pay-form {
+  display: grid;
+  gap: 0.45rem;
+  flex: 1 1 12rem;
+}
+
+.currency-label {
+  display: grid;
+  gap: 0.3rem;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.currency-label select {
+  width: 100%;
+  padding: 0.45rem 0.55rem;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: #0a0b0c;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.85rem;
 }
 
 .btn-ghost {

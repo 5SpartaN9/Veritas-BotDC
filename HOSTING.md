@@ -116,6 +116,23 @@ Zapisz → poczekaj na redeploy (**Live**).
 
 Stripe (płatności) — szczegóły powyżej.
 
+### Multi-currency prices (USD / EUR / PLN / RUB / CNY)
+
+Dla każdego produktu dodaj **osobną cenę** w każdej walucie
+(Product → Add another price). Kwoty:
+
+| Plan | USD | EUR | PLN | RUB | CNY |
+|------|-----|-----|-----|-----|-----|
+| Premium / mo | 5.99 | 5.49 | 20 | 290 | 24 |
+| Ultra / mo | 16.99 | 14.99 | 57 | 820 | 68 |
+| Lifetime once | 79 | 69 | 265 | 3800 | 315 |
+
+Na Render Environment wklej `price_…` np.:
+`STRIPE_PRICE_ULTRA_PLN`, `STRIPE_PRICE_PREMIUM_EUR`, …
+Stare `STRIPE_PRICE_ID` / `_ULTRA` / `_ULTRA_LIFETIME` = fallback USD.
+
+W panelu przy kupnie jest wybór waluty — klient płaci **dokładnie** tę kwotę.
+
 ## Krok 4 — Discord Developer Portal
 1. Wejdź w swoją aplikację Discord → **OAuth2** → Redirects
 2. Dodaj: `https://TWOJ-PANEL.onrender.com/auth/callback`

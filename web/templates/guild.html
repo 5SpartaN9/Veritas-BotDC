@@ -69,8 +69,16 @@
     </ul>
     <div class="pay-actions">
       {% if payments_enabled and plan.plan not in ['premium', 'ultra'] %}
-      <form method="post" action="/dashboard/{{ guild.id }}/checkout">
+      <form method="post" action="/dashboard/{{ guild.id }}/checkout" class="pay-form">
         <input type="hidden" name="tier" value="premium" />
+        <label class="currency-label">
+          Currency
+          <select name="currency">
+            {% for opt in currency_options %}
+            <option value="{{ opt.code }}" {% if opt.code == default_currency %}selected{% endif %}>{{ opt.name }} — {{ price_by_currency.premium[opt.code] }}</option>
+            {% endfor %}
+          </select>
+        </label>
         <button class="btn" type="submit">Get Premium</button>
       </form>
       {% endif %}
@@ -97,8 +105,8 @@
     {% else %}
     <p class="plan-price">{{ ultra_price_label }}</p>
     <p class="plan-note">
-      First 10 servers: 3 months Ultra free. Then monthly or {{ lifetime_price_label }}.
-      Checkout uses card / billing country.
+      First 10 servers: 3 months Ultra free. Then monthly or Lifetime.
+      Pick currency below — you pay exactly that amount in Stripe.
     </p>
     {% endif %}
     <ul>
@@ -108,29 +116,69 @@
     </ul>
     <div class="pay-actions">
       {% if payments_enabled and plan.plan != 'ultra' %}
-      <form method="post" action="/dashboard/{{ guild.id }}/checkout">
+      <form method="post" action="/dashboard/{{ guild.id }}/checkout" class="pay-form">
         <input type="hidden" name="tier" value="ultra" />
+        <label class="currency-label">
+          Currency
+          <select name="currency">
+            {% for opt in currency_options %}
+            <option value="{{ opt.code }}" {% if opt.code == default_currency %}selected{% endif %}>{{ opt.name }} — {{ price_by_currency.ultra[opt.code] }}</option>
+            {% endfor %}
+          </select>
+        </label>
         <button class="btn" type="submit">Get Ultra / mo</button>
       </form>
-      <form method="post" action="/dashboard/{{ guild.id }}/checkout">
+      <form method="post" action="/dashboard/{{ guild.id }}/checkout" class="pay-form">
         <input type="hidden" name="tier" value="ultra_lifetime" />
+        <label class="currency-label">
+          Currency
+          <select name="currency">
+            {% for opt in currency_options %}
+            <option value="{{ opt.code }}" {% if opt.code == default_currency %}selected{% endif %}>{{ opt.name }} — {{ price_by_currency.lifetime[opt.code] }}</option>
+            {% endfor %}
+          </select>
+        </label>
         <button class="btn btn-ghost" type="submit">Ultra Lifetime</button>
       </form>
       {% elif is_ultra and plan.is_trial %}
-      <form method="post" action="/dashboard/{{ guild.id }}/checkout">
+      <form method="post" action="/dashboard/{{ guild.id }}/checkout" class="pay-form">
         <input type="hidden" name="tier" value="ultra" />
+        <label class="currency-label">
+          Currency
+          <select name="currency">
+            {% for opt in currency_options %}
+            <option value="{{ opt.code }}" {% if opt.code == default_currency %}selected{% endif %}>{{ opt.name }} — {{ price_by_currency.ultra[opt.code] }}</option>
+            {% endfor %}
+          </select>
+        </label>
         <button class="btn" type="submit">Keep Ultra / mo</button>
       </form>
-      <form method="post" action="/dashboard/{{ guild.id }}/checkout">
+      <form method="post" action="/dashboard/{{ guild.id }}/checkout" class="pay-form">
         <input type="hidden" name="tier" value="ultra_lifetime" />
+        <label class="currency-label">
+          Currency
+          <select name="currency">
+            {% for opt in currency_options %}
+            <option value="{{ opt.code }}" {% if opt.code == default_currency %}selected{% endif %}>{{ opt.name }} — {{ price_by_currency.lifetime[opt.code] }}</option>
+            {% endfor %}
+          </select>
+        </label>
         <button class="btn btn-ghost" type="submit">Ultra Lifetime</button>
       </form>
       {% elif is_ultra and not is_lifetime %}
       <form method="post" action="/dashboard/{{ guild.id }}/billing">
         <button class="btn" type="submit">Manage billing</button>
       </form>
-      <form method="post" action="/dashboard/{{ guild.id }}/checkout">
+      <form method="post" action="/dashboard/{{ guild.id }}/checkout" class="pay-form">
         <input type="hidden" name="tier" value="ultra_lifetime" />
+        <label class="currency-label">
+          Currency
+          <select name="currency">
+            {% for opt in currency_options %}
+            <option value="{{ opt.code }}" {% if opt.code == default_currency %}selected{% endif %}>{{ opt.name }} — {{ price_by_currency.lifetime[opt.code] }}</option>
+            {% endfor %}
+          </select>
+        </label>
         <button class="btn btn-ghost" type="submit">Switch to Lifetime</button>
       </form>
       {% elif not payments_enabled %}
