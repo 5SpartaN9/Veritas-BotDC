@@ -177,7 +177,6 @@
         <input type="hidden" name="tier" value="ultra_lifetime" />
         <button class="btn btn-ghost" type="submit">Lifetime · {{ regional_lifetime_price }}</button>
       </form>
-      <p class="plan-note">Want Premium instead? Use the button on the Premium card.</p>
       {% elif is_ultra and not is_lifetime %}
       <form method="post" action="/dashboard/{{ guild.id }}/billing">
         <button class="btn" type="submit">Manage billing</button>
