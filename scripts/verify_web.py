@@ -100,6 +100,7 @@ def main() -> None:
         regional_premium_price="20 zł / mo",
         regional_ultra_price="57 zł / mo",
         regional_lifetime_price="265 zł once",
+        demo_until_example="2026-11-13",
     )
     assert 'name="currency"' not in html
     assert "57 zł" in html

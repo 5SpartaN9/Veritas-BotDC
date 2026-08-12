@@ -19,6 +19,7 @@ from utils.plans import (
     PREMIUM_FEATURES,
     ULTRA_FEATURES,
     autochat_mode_allowed,
+    demo_until_if_started_today,
     ensure_early_trial,
     get_plan_info,
     has_premium_features,
@@ -245,6 +246,7 @@ async def dashboard(request: Request):
             "early_slots_limit": EARLY_TRIAL_LIMIT,
             "ultra_slots_used": ultra_slots_used,
             "ultra_slots_limit": EARLY_ULTRA_TRIAL_LIMIT,
+            "demo_until_example": demo_until_if_started_today(),
             "free_features": FREE_FEATURES,
             "premium_features": PREMIUM_FEATURES,
             "ultra_features": ULTRA_FEATURES,
@@ -384,6 +386,7 @@ async def _render_guild_dashboard(
             "regional_premium_price": price_map["premium"],
             "regional_ultra_price": price_map["ultra"],
             "regional_lifetime_price": price_map["lifetime"],
+            "demo_until_example": demo_until_if_started_today(),
         },
     )
 

@@ -236,6 +236,11 @@ def ensure_early_trial(guild_id: int) -> PlanInfo:
     return info
 
 
+def demo_until_if_started_today() -> str:
+    """Marketing date: if someone starts the early demo today, it runs until this day."""
+    return _add_months(_now(), EARLY_TRIAL_MONTHS).date().isoformat()
+
+
 def user_rate_limit(guild_id: int | None) -> int:
     if guild_id is None:
         return FREE_USER_RPM

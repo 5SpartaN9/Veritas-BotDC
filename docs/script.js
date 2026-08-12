@@ -211,6 +211,31 @@ function initRegionalPricing() {
 
 initRegionalPricing();
 
+/* --- Early demo end date (today + 3 calendar months) --- */
+function addCalendarMonths(date, months) {
+  const out = new Date(date.getTime());
+  const day = out.getDate();
+  out.setMonth(out.getMonth() + months);
+  if (out.getDate() < day) out.setDate(0); // clamp end-of-month
+  return out;
+}
+
+function formatDemoUntil(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+function initDemoUntilLabels() {
+  const until = formatDemoUntil(addCalendarMonths(new Date(), 3));
+  document.querySelectorAll("[data-demo-until]").forEach((el) => {
+    el.textContent = until;
+  });
+}
+
+initDemoUntilLabels();
+
 /* --- Reviews (stored on Render API) --- */
 const REVIEWS_API =
   location.hostname.includes("onrender.com") || location.hostname === "127.0.0.1"
