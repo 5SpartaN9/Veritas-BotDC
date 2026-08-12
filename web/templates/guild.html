@@ -111,7 +111,7 @@
         onsubmit="return confirm('Switch this server from Ultra to Premium now?');"
       >
         <input type="hidden" name="tier" value="premium" />
-        <button class="btn" type="submit">Switch to Premium · {{ regional_premium_price }}</button>
+        <button class="btn btn-ghost" type="submit">Switch to Premium · {{ regional_premium_price }}</button>
       </form>
       {% endif %}
       {% if paypal_url and plan.plan not in ['premium', 'ultra'] %}
@@ -173,19 +173,11 @@
         <input type="hidden" name="tier" value="ultra" />
         <button class="btn" type="submit">Keep Ultra · {{ regional_ultra_price }}</button>
       </form>
-      <form
-        method="post"
-        action="/dashboard/{{ guild.id }}/switch-plan"
-        class="pay-form"
-        onsubmit="return confirm('Switch this demo to paid Premium now?');"
-      >
-        <input type="hidden" name="tier" value="premium" />
-        <button class="btn btn-ghost" type="submit">Switch to Premium · {{ regional_premium_price }}</button>
-      </form>
       <form method="post" action="/dashboard/{{ guild.id }}/checkout" class="pay-form">
         <input type="hidden" name="tier" value="ultra_lifetime" />
         <button class="btn btn-ghost" type="submit">Lifetime · {{ regional_lifetime_price }}</button>
       </form>
+      <p class="plan-note">Want Premium instead? Use the button on the Premium card.</p>
       {% elif is_ultra and not is_lifetime %}
       <form method="post" action="/dashboard/{{ guild.id }}/billing">
         <button class="btn" type="submit">Manage billing</button>
