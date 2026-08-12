@@ -78,10 +78,12 @@ def get_plan_info(guild_id: int) -> PlanInfo:
         ultra_slots_limit=EARLY_ULTRA_TRIAL_LIMIT,
     )
 
-    # Paid Lifetime / paid Ultra
-    if data.get("lifetime") or (
-        data.get("premium") and data.get("ultra") and not data.get("ultra_trial")
-    ):
+    paid_ultra = bool(data.get("lifetime")) or (
+        bool(data.get("premium"))
+        and (bool(data.get("ultra")) or data.get("plan") == "ultra")
+    )
+    # Paid Ultra / Lifetime always win over a leftover ultra_trial flag.
+    if paid_ultra:
         label = "Ultra Lifetime" if data.get("lifetime") else "Ultra Premium"
         return PlanInfo(
             plan="ultra",
@@ -156,6 +158,15 @@ def ensure_early_trial(guild_id: int) -> PlanInfo:
         return info
 
     data = settings_store.get_guild_plan(guild_id)
+    # Never overwrite a paid / Stripe-backed plan with a demo slot.
+    if (
+        data.get("premium")
+        or data.get("lifetime")
+        or data.get("stripe_subscription_id")
+        or data.get("stripe_customer_id")
+    ):
+        return info
+
     # Already used a trial that expired — don't auto-renew
     if data.get("trial_ends") and not info.active:
         return info

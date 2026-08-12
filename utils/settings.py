@@ -19,17 +19,25 @@ class SettingsStore:
         self.path = path
         self._lock = Lock()
         self._data: dict = {"channels": {}, "guilds": {}, "meta": {}}
-        self._mtime: float | None = None
+        self._file_sig: tuple[int, int] | None = None
         self._load()
+
+    def _file_signature(self) -> tuple[int, int] | None:
+        try:
+            stat = self.path.stat()
+            return (int(getattr(stat, "st_mtime_ns", int(stat.st_mtime * 1e9))), int(stat.st_size))
+        except OSError:
+            return None
 
     def _load(self) -> None:
         if not self.path.exists():
             self._data = {"channels": {}, "guilds": {}, "meta": {}}
-            self._mtime = None
+            self._file_sig = None
             return
         try:
-            mtime = self.path.stat().st_mtime
-            if self._mtime is not None and mtime == self._mtime:
+            sig = self._file_signature()
+            # Re-read whenever another process (web panel / bot) rewrote the file.
+            if self._file_sig is not None and sig == self._file_sig:
                 return
             raw = json.loads(self.path.read_text(encoding="utf-8"))
             if isinstance(raw, dict):
@@ -37,10 +45,10 @@ class SettingsStore:
             self._data.setdefault("channels", {})
             self._data.setdefault("guilds", {})
             self._data.setdefault("meta", {})
-            self._mtime = mtime
+            self._file_sig = self._file_signature() or sig
         except (json.JSONDecodeError, TypeError, OSError):
             self._data = {"channels": {}, "guilds": {}, "meta": {}}
-            self._mtime = None
+            self._file_sig = None
 
     def _save(self) -> None:
         self.path.parent.mkdir(parents=True, exist_ok=True)
@@ -48,10 +56,7 @@ class SettingsStore:
             json.dumps(self._data, ensure_ascii=False, indent=2),
             encoding="utf-8",
         )
-        try:
-            self._mtime = self.path.stat().st_mtime
-        except OSError:
-            self._mtime = None
+        self._file_sig = self._file_signature()
 
     def get_autochat(self, channel_id: int) -> str:
         with self._lock:

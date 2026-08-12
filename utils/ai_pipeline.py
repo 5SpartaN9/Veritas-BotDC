@@ -9,7 +9,7 @@ import discord
 from utils.cache import response_cache
 from utils.chat_context import fetch_channel_context
 from utils.history import history_store
-from utils.plans import command_allowed, user_rate_limit
+from utils.plans import command_allowed, get_plan_info, user_rate_limit
 from utils.rate_limit import rate_limiter
 from utils.response_format import (
     ParsedResponse,
@@ -81,8 +81,9 @@ async def run_ai_interaction(
                 "Upgrade to Premium for higher limits."
             )
         else:
+            plan_label = get_plan_info(guild_id).label if guild_id else "Free"
             msg = (
-                f"Rate limit: max {limit} AI requests / 10 minutes. "
+                f"Rate limit ({plan_label}): max {limit} AI requests / 10 minutes. "
                 f"Try again in **{retry}s**."
             )
         await _deny(interaction, None, msg, pre_deferred=pre_deferred)
@@ -173,8 +174,9 @@ async def run_ai_message(
         if retry >= 86000:
             msg = "Daily AI limit for this server reached."
         else:
+            plan_label = get_plan_info(guild_id).label if guild_id else "Free"
             msg = (
-                f"Rate limit: max {limit} AI requests / 10 minutes. "
+                f"Rate limit ({plan_label}): max {limit} AI requests / 10 minutes. "
                 f"Try again in **{retry}s**."
             )
         await _deny(None, message, msg)
