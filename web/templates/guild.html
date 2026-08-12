@@ -18,13 +18,13 @@
   {% if plan.plan == "ultra" and is_lifetime %}
   <span class="badge ultra">Ultra Lifetime</span>
   {% elif plan.plan == "ultra" and plan.is_trial %}
-  <span class="badge ultra">Ultra Demo · until {{ plan.trial_ends }}</span>
+  <span class="badge ultra">Ultra Demo · {{ plan.trial_days_left }}d left</span>
   {% elif plan.plan == "ultra" %}
   <span class="badge ultra">Ultra Premium</span>
   {% elif plan.plan == "premium" %}
   <span class="badge">Premium</span>
   {% elif plan.plan == "trial" %}
-  <span class="badge trial">Premium Demo · until {{ plan.trial_ends }}</span>
+  <span class="badge trial">Premium Demo · {{ plan.trial_days_left }}d left</span>
   {% else %}
   <span class="badge muted">Free</span>
   {% endif %}
@@ -80,7 +80,10 @@
     <h2>{% if plan.plan == "trial" %}Premium / Demo{% else %}Premium{% endif %}</h2>
     {% if plan.plan == "trial" %}
     <p class="plan-price">Active demo</p>
-    <p class="plan-note">Ends {{ plan.trial_ends }}. After that this server returns to Free unless you upgrade.</p>
+    <p class="plan-note">
+      {{ plan.trial_days_left }} days left · until {{ plan.trial_ends }}
+      (3 calendar months from demo start). Then this server returns to Free unless you upgrade.
+    </p>
     {% elif plan.plan == "premium" %}
     <p class="plan-price">Active · {{ regional_premium_price }}</p>
     <p class="plan-note">Paid Premium is enabled for this server.</p>
@@ -127,9 +130,8 @@
     {% elif plan.plan == "ultra" and plan.is_trial %}
     <p class="plan-price">Active demo · Ultra limits</p>
     <p class="plan-note">
-      Early Ultra: free until {{ plan.trial_ends }}
-      ({{ plan.ultra_slots_used }}/{{ plan.ultra_slots_limit }} early Ultra slots used).
-      First 10 servers get 3 months Ultra free.
+      {{ plan.trial_days_left }} days left · until {{ plan.trial_ends }}
+      ({{ plan.ultra_slots_used }}/{{ plan.ultra_slots_limit }} early Ultra slots · full 3 months).
     </p>
     {% elif plan.plan == "ultra" %}
     <p class="plan-price">Active · {{ regional_ultra_price }}</p>

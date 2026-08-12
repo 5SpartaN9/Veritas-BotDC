@@ -220,11 +220,13 @@ async def dashboard(request: Request):
                 g["plan"] = info.plan
                 g["plan_label"] = info.label
                 g["trial_ends"] = info.trial_ends
+                g["trial_days_left"] = info.trial_days_left
             except Exception as exc:
                 print(f"[dashboard] plan load failed for {g.get('id')}: {exc!r}")
                 g["plan"] = "free"
                 g["plan_label"] = "Free"
                 g["trial_ends"] = None
+                g["trial_days_left"] = None
 
     slots_used = settings_store.count_early_trials()
     ultra_slots_used = settings_store.count_early_ultra_trials()

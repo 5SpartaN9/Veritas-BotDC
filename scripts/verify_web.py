@@ -63,6 +63,7 @@ def main() -> None:
         active=True,
         label="Ultra Demo",
         trial_ends="2026-11-09",
+        trial_days_left=88,
         is_trial=True,
         ultra_slots_used=2,
         ultra_slots_limit=10,

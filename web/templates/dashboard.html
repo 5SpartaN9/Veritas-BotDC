@@ -75,12 +75,14 @@
       <span>
         {% if guild.bot_in_guild %}Bot installed{% else %}Invite needed{% endif %}
         ·
-        {% if guild.plan == "ultra" %}
+        {% if guild.plan == "ultra" and guild.trial_days_left is not none %}
+          Ultra Demo · {{ guild.trial_days_left }}d left
+        {% elif guild.plan == "ultra" %}
           Ultra Premium
         {% elif guild.plan == "premium" %}
           Premium
         {% elif guild.plan == "trial" %}
-          Demo until {{ guild.trial_ends }}
+          Demo · {{ guild.trial_days_left }}d left (until {{ guild.trial_ends }})
         {% else %}
           Free
         {% endif %}

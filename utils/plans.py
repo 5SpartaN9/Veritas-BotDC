@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import calendar
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 
@@ -7,7 +8,7 @@ from utils.settings import settings_store
 
 EARLY_TRIAL_LIMIT = 15  # Premium demo slots
 EARLY_ULTRA_TRIAL_LIMIT = 10  # Ultra demo slots (separate)
-EARLY_TRIAL_DAYS = 90
+EARLY_TRIAL_MONTHS = 3  # full calendar months (13 Aug → 13 Nov)
 
 # Limits sized so paid plans stay modestly profitable at max use
 # (~4.5 gr / AI ask). Caps are the product, not “infinite AI”.
@@ -29,6 +30,7 @@ class PlanInfo:
     active: bool
     label: str
     trial_ends: str | None = None
+    trial_days_left: int | None = None
     early_slot: bool = False
     early_ultra_slot: bool = False
     slots_used: int = 0
@@ -47,11 +49,39 @@ def _parse_iso(value: str | None) -> datetime | None:
         return None
     try:
         dt = datetime.fromisoformat(value)
-        if dt.tzinfo is None:
-            dt = dt.replace(tzinfo=timezone.utc)
-        return dt
     except ValueError:
         return None
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt
+
+
+def _add_months(dt: datetime, months: int) -> datetime:
+    """Add full calendar months (e.g. 13 Aug → 13 Nov)."""
+    month_index = dt.month - 1 + months
+    year = dt.year + month_index // 12
+    month = month_index % 12 + 1
+    day = min(dt.day, calendar.monthrange(year, month)[1])
+    return dt.replace(year=year, month=month, day=day)
+
+
+def _days_left(ends: datetime) -> int:
+    return max(0, (ends.date() - _now().date()).days)
+
+
+def resolve_trial_end(data: dict) -> datetime | None:
+    """
+    Demo length = 3 calendar months from trial_started.
+    Legacy ~90-day rows are upgraded to a full 3 months.
+    """
+    started = _parse_iso(data.get("trial_started"))
+    stored_ends = _parse_iso(data.get("trial_ends"))
+    if started is not None:
+        return _add_months(started, EARLY_TRIAL_MONTHS)
+    if stored_ends is None:
+        return None
+    approx_start = stored_ends - timedelta(days=90)
+    return _add_months(approx_start, EARLY_TRIAL_MONTHS)
 
 
 def _slot_counts() -> tuple[int, int]:
@@ -66,8 +96,10 @@ def get_plan_info(guild_id: int) -> PlanInfo:
     slots_used, ultra_slots_used = _slot_counts()
     early_slot = bool(data.get("early_slot"))
     early_ultra_slot = bool(data.get("early_ultra_slot"))
-    ends = _parse_iso(data.get("trial_ends"))
+    ends = resolve_trial_end(data)
     trial_active = bool(ends and ends > _now())
+    days_left = _days_left(ends) if ends and trial_active else None
+    ends_label = ends.date().isoformat() if ends else None
 
     base = dict(
         early_slot=early_slot,
@@ -90,6 +122,7 @@ def get_plan_info(guild_id: int) -> PlanInfo:
             active=True,
             label=label,
             trial_ends=None,
+            trial_days_left=None,
             is_trial=False,
             **base,
         )
@@ -100,7 +133,8 @@ def get_plan_info(guild_id: int) -> PlanInfo:
             plan="ultra",
             active=True,
             label="Ultra Demo",
-            trial_ends=ends.date().isoformat() if ends else None,
+            trial_ends=ends_label,
+            trial_days_left=days_left,
             is_trial=True,
             **base,
         )
@@ -111,6 +145,7 @@ def get_plan_info(guild_id: int) -> PlanInfo:
             active=True,
             label="Premium",
             trial_ends=None,
+            trial_days_left=None,
             is_trial=False,
             **base,
         )
@@ -121,7 +156,8 @@ def get_plan_info(guild_id: int) -> PlanInfo:
             plan="trial",
             active=True,
             label="Premium Demo",
-            trial_ends=ends.date().isoformat() if ends else None,
+            trial_ends=ends_label,
+            trial_days_left=days_left,
             is_trial=True,
             **base,
         )
@@ -130,7 +166,8 @@ def get_plan_info(guild_id: int) -> PlanInfo:
         plan="free",
         active=False,
         label="Free",
-        trial_ends=data.get("trial_ends"),
+        trial_ends=ends_label,
+        trial_days_left=None,
         is_trial=False,
         **base,
     )
@@ -150,7 +187,7 @@ def has_ultra_features(guild_id: int | None) -> bool:
 
 
 def ensure_early_trial(guild_id: int) -> PlanInfo:
-    """Grant early demos: first 10 servers → Ultra 90d; next Premium slots → Premium 90d."""
+    """Grant early demos: first 10 servers → Ultra 3 months; next → Premium 3 months."""
     info = get_plan_info(guild_id)
     if info.plan in {"premium", "ultra"} and info.active and not info.is_trial:
         return info
@@ -172,7 +209,7 @@ def ensure_early_trial(guild_id: int) -> PlanInfo:
         return info
 
     started = _now()
-    ends = started + timedelta(days=EARLY_TRIAL_DAYS)
+    ends = _add_months(started, EARLY_TRIAL_MONTHS)
 
     ultra_used = settings_store.count_early_ultra_trials()
     if ultra_used < EARLY_ULTRA_TRIAL_LIMIT:
