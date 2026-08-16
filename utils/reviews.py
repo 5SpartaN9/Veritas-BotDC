@@ -118,5 +118,17 @@ class ReviewStore:
                 "created_at": row["created_at"],
             }
 
+    def delete(self, review_id: str) -> bool:
+        rid = (review_id or "").strip()
+        if not rid:
+            return False
+        with self._lock:
+            rows = self._load()
+            keep = [r for r in rows if str(r.get("id")) != rid]
+            if len(keep) == len(rows):
+                return False
+            self._save(keep)
+            return True
+
 
 review_store = ReviewStore()

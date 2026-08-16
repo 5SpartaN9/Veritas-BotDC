@@ -271,6 +271,35 @@ class SettingsStore:
                 )
             )
 
+    def get_owner_discord_ids(self) -> list[str]:
+        with self._lock:
+            self._load()
+            raw = self._data.get("meta", {}).get("owner_discord_ids") or []
+            if isinstance(raw, list):
+                return [str(x) for x in raw if str(x).strip()]
+            return []
+
+    def ensure_owner_discord_id(self, user_id: str) -> bool:
+        """
+        True if this user is (or becomes) an owner.
+        If no owners are stored yet, the first caller is recorded as owner.
+        """
+        uid = str(user_id or "").strip()
+        if not uid:
+            return False
+        with self._lock:
+            self._load()
+            meta = self._data.setdefault("meta", {})
+            owners = meta.get("owner_discord_ids")
+            if not isinstance(owners, list):
+                owners = []
+            owners = [str(x) for x in owners if str(x).strip()]
+            if not owners:
+                meta["owner_discord_ids"] = [uid]
+                self._save()
+                return True
+            return uid in owners
+
     def guild_snapshot(self, guild_id: int) -> dict:
         with self._lock:
             self._load()

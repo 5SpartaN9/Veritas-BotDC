@@ -32,6 +32,7 @@ from web.config import (
     DISCORD_CLIENT_SECRET,
     INVITE_URL,
     MANAGE_GUILD,
+    OWNER_DISCORD_IDS,
     PAYMENTS_ENABLED,
     PAYPAL_BUTTON_URL,
     PAYPAL_ME_URL,
@@ -115,6 +116,22 @@ def _managed_guilds(session_data: dict, bot_guild_ids: set[str]) -> list[dict]:
     return result
 
 
+def _is_site_owner(user: dict | None, *, claim: bool = False) -> bool:
+    if not user:
+        return False
+    uid = str(user.get("id") or "")
+    if not uid:
+        return False
+    if OWNER_DISCORD_IDS:
+        return uid in OWNER_DISCORD_IDS
+    stored = settings_store.get_owner_discord_ids()
+    if uid in stored:
+        return True
+    if claim:
+        return settings_store.ensure_owner_discord_id(uid)
+    return False
+
+
 @app.get("/health")
 async def health() -> JSONResponse:
     return JSONResponse({"ok": True, "service": "veritas"})
@@ -159,6 +176,37 @@ async def create_review(request: Request) -> JSONResponse:
         raise HTTPException(status_code=500, detail="Could not save review") from exc
 
     return JSONResponse({"ok": True, "review": row})
+
+
+@app.get("/dashboard/reviews", response_class=HTMLResponse)
+async def reviews_admin(request: Request):
+    session_data = current_session(request)
+    if not session_data or not session_data.get("user"):
+        return RedirectResponse("/auth/login", status_code=303)
+    user = session_data["user"]
+    if not _is_site_owner(user, claim=True):
+        raise HTTPException(status_code=403, detail="Owner access only")
+    return templates.TemplateResponse(
+        request,
+        "reviews_admin.html",
+        {
+            "user": user,
+            "reviews": review_store.list_public(limit=200),
+            "deleted": request.query_params.get("deleted") == "1",
+            "is_owner": True,
+        },
+    )
+
+
+@app.post("/dashboard/reviews/{review_id}/delete")
+async def delete_review(request: Request, review_id: str):
+    session_data = current_session(request)
+    if not session_data or not session_data.get("user"):
+        return RedirectResponse("/auth/login", status_code=303)
+    if not _is_site_owner(session_data["user"], claim=True):
+        raise HTTPException(status_code=403, detail="Owner access only")
+    review_store.delete(review_id)
+    return RedirectResponse("/dashboard/reviews?deleted=1", status_code=303)
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -247,6 +295,7 @@ async def dashboard(request: Request):
             "ultra_slots_used": ultra_slots_used,
             "ultra_slots_limit": EARLY_ULTRA_TRIAL_LIMIT,
             "demo_until_example": demo_until_if_started_today(),
+            "is_owner": _is_site_owner(user),
             "free_features": FREE_FEATURES,
             "premium_features": PREMIUM_FEATURES,
             "ultra_features": ULTRA_FEATURES,
@@ -387,6 +436,7 @@ async def _render_guild_dashboard(
             "regional_ultra_price": price_map["ultra"],
             "regional_lifetime_price": price_map["lifetime"],
             "demo_until_example": demo_until_if_started_today(),
+            "is_owner": _is_site_owner(user),
         },
     )
 

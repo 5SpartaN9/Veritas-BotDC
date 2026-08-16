@@ -33,6 +33,8 @@ services:
         sync: false
       - key: GEMINI_MODEL
         value: gemini-flash-latest
+      - key: OWNER_DISCORD_IDS
+        sync: false
       - key: STRIPE_SECRET_KEY
         sync: false
       - key: STRIPE_PUBLISHABLE_KEY

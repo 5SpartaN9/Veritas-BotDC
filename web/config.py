@@ -25,6 +25,12 @@ SITE_URL = os.getenv(
 ).rstrip("/") + "/"
 PANEL_URL = os.getenv("PANEL_URL", f"{PUBLIC_BASE_URL}/dashboard")
 
+OWNER_DISCORD_IDS = {
+    part.strip()
+    for part in os.getenv("OWNER_DISCORD_IDS", "").split(",")
+    if part.strip()
+}
+
 # Payments — Stripe (cards, BLIK via local methods, optional PayPal in Stripe Dashboard)
 STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "")
 STRIPE_PUBLISHABLE_KEY = os.getenv("STRIPE_PUBLISHABLE_KEY", "")

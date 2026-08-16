@@ -198,6 +198,17 @@ a {
   font-size: 0.92rem;
 }
 
+.review-mod {
+  align-items: flex-start;
+}
+
+.review-mod p.muted {
+  margin: 0.45rem 0 0;
+  color: var(--muted);
+  line-height: 1.55;
+  max-width: 42rem;
+}
+
 .chev {
   color: var(--accent);
   white-space: nowrap;

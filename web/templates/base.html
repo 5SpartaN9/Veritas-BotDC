@@ -20,9 +20,15 @@
       <a class="brand" href="/dashboard">Veritas</a>
       <nav class="top-nav" aria-label="Dashboard">
         <a
-          class="nav-link {% if path == '/dashboard' or path.startswith('/dashboard/') %}is-active{% endif %}"
+          class="nav-link {% if path == '/dashboard' or (path.startswith('/dashboard/') and not path.startswith('/dashboard/reviews')) %}is-active{% endif %}"
           href="/dashboard"
         >Servers</a>
+        {% if is_owner is defined and is_owner %}
+        <a
+          class="nav-link {% if path.startswith('/dashboard/reviews') %}is-active{% endif %}"
+          href="/dashboard/reviews"
+        >Reviews</a>
+        {% endif %}
         <a class="nav-link" href="/" target="_blank" rel="noreferrer">Website</a>
         {% if user is defined and user %}
         <span class="user" title="Signed in">{{ user.username }}</span>

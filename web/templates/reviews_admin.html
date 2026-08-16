@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Reviews — Veritas{% endblock %}
+{% block content %}
+<section class="hero-panel">
+  <div>
+    <h1>Moderate reviews</h1>
+    <p>Delete spam or test comments from the public landing page.</p>
+  </div>
+  <a class="btn btn-ghost" href="/dashboard">← Servers</a>
+</section>
+
+{% if deleted %}
+<article class="notice ok">Review deleted.</article>
+{% endif %}
+
+{% if reviews %}
+<div class="server-list">
+  {% for review in reviews %}
+  <article class="server review-mod">
+    <div>
+      <strong>{{ review.name }}</strong>
+      <span>{{ "★" * review.stars }}{{ "☆" * (5 - review.stars) }} · {{ review.created_at }}</span>
+      <p class="muted">{{ review.text }}</p>
+    </div>
+    <form
+      method="post"
+      action="/dashboard/reviews/{{ review.id }}/delete"
+      onsubmit="return confirm('Delete this review?');"
+    >
+      <button class="btn btn-ghost" type="submit">Delete</button>
+    </form>
+  </article>
+  {% endfor %}
+</div>
+{% else %}
+<article class="notice">No reviews yet.</article>
+{% endif %}
+{% endblock %}
