@@ -16,6 +16,33 @@ class RateLimiter:
         self._guild_day: dict[str, dict[str, int]] = {}
         self._lock = Lock()
 
+    def peek_user(self, user_id: int, guild_id: int | None) -> tuple[int, int, int]:
+        """Return (used, limit, seconds_until_slot) without consuming a request."""
+        limit = user_rate_limit(guild_id)
+        now = time.monotonic()
+        with self._lock:
+            q = self._hits[user_id]
+            while q and now - q[0] > WINDOW_SECONDS:
+                q.popleft()
+            used = len(q)
+            if used >= limit and q:
+                retry = int(WINDOW_SECONDS - (now - q[0])) + 1
+                return used, limit, max(retry, 1)
+            return used, limit, 0
+
+    def peek_guild_daily(self, guild_id: int | None) -> tuple[int, int]:
+        """Return (used, limit) for today's server quota without consuming."""
+        if guild_id is None:
+            return 0, FREE_GUILD_DAILY
+        day = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        key = str(guild_id)
+        limit = guild_daily_limit(guild_id)
+        with self._lock:
+            entry = self._guild_day.get(key)
+            if not entry or entry.get("day") != day:
+                return 0, limit
+            return int(entry.get("count", 0)), limit
+
     def check_user(self, user_id: int, guild_id: int | None) -> tuple[bool, int]:
         limit = user_rate_limit(guild_id)
         now = time.monotonic()

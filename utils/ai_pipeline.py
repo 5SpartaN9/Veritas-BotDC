@@ -77,14 +77,14 @@ async def run_ai_interaction(
         limit = user_rate_limit(guild_id)
         if retry >= 86000:
             msg = (
-                "Daily AI limit for this server reached. "
-                "Upgrade to Premium for higher limits."
+                "Daily AI limit for this server reached.\n"
+                "Check `/status` or upgrade in the dashboard for higher limits."
             )
         else:
             plan_label = get_plan_info(guild_id).label if guild_id else "Free"
             msg = (
-                f"Rate limit ({plan_label}): max {limit} AI requests / 10 minutes. "
-                f"Try again in **{retry}s**."
+                f"**{plan_label}** rate limit: max **{limit}** AI requests / 10 minutes.\n"
+                f"Try again in **{retry}s** · `/status` for remaining quota."
             )
         await _deny(interaction, None, msg, pre_deferred=pre_deferred)
         return None
@@ -172,12 +172,15 @@ async def run_ai_message(
     if not allowed:
         limit = user_rate_limit(guild_id)
         if retry >= 86000:
-            msg = "Daily AI limit for this server reached."
+            msg = (
+                "Daily AI limit for this server reached. "
+                "Use `/status` or upgrade in the dashboard."
+            )
         else:
             plan_label = get_plan_info(guild_id).label if guild_id else "Free"
             msg = (
-                f"Rate limit ({plan_label}): max {limit} AI requests / 10 minutes. "
-                f"Try again in **{retry}s**."
+                f"**{plan_label}** rate limit: max **{limit}** AI requests / 10 minutes.\n"
+                f"Try again in **{retry}s** · `/status` for remaining quota."
             )
         await _deny(None, message, msg)
         return None

@@ -128,6 +128,29 @@ def _extract_named_links(text: str) -> list[tuple[str, str]]:
     return out
 
 
+def _normalize_verdict(verdict: str | None) -> str | None:
+    if not verdict:
+        return None
+    text = " ".join(verdict.strip().split())
+    upper = text.upper()
+    for key in ("PARTLY TRUE", "TRUE", "FALSE", "UNVERIFIED"):
+        if key in upper:
+            return key.title() if key != "PARTLY TRUE" else "Partly true"
+    # Keep short custom verdicts readable
+    if len(text) > 80:
+        text = text[:77] + "…"
+    return text
+
+
+def _shorten(text: str | None, limit: int = 900) -> str | None:
+    if not text:
+        return None
+    clean = " ".join(text.strip().split())
+    if len(clean) <= limit:
+        return clean
+    return clean[: limit - 1] + "…"
+
+
 def verdict_color(verdict: str | None) -> discord.Color:
     if not verdict:
         return VERDICT_COLORS["DEFAULT"]
@@ -147,38 +170,47 @@ def build_response_embed(
     if parsed.brief:
         embed = discord.Embed(
             title=title,
-            description=(parsed.answer or parsed.raw)[:4000],
+            description=_shorten(parsed.answer or parsed.raw, 1800) or "",
             color=VERDICT_COLORS["DEFAULT"],
         )
+        footer = "Quick reply"
         if cached:
-            embed.set_footer(text="Cached answer")
+            footer += " · cached"
+        embed.set_footer(text=footer)
         return embed
 
-    color = verdict_color(parsed.verdict)
+    verdict = _normalize_verdict(parsed.verdict)
+    color = verdict_color(verdict or parsed.verdict)
     embed = discord.Embed(title=title, color=color)
 
-    if parsed.verdict:
-        embed.add_field(name="Verdict", value=parsed.verdict[:1024], inline=True)
-    if parsed.confidence:
-        embed.add_field(name="Confidence", value=parsed.confidence[:1024], inline=True)
-    if cached:
-        embed.add_field(name="Cache", value="hit", inline=True)
+    if verdict:
+        embed.description = f"**{verdict}**"
+        if parsed.confidence:
+            conf = _shorten(parsed.confidence, 120)
+            embed.description += f"\nConfidence: {conf}"
 
-    body = parsed.answer or parsed.reasoning
-    if body:
-        embed.add_field(name="Summary", value=body[:1024], inline=False)
-    elif parsed.reasoning and parsed.answer:
-        embed.add_field(name="Reasoning", value=parsed.reasoning[:1024], inline=False)
+    summary = _shorten(parsed.answer or parsed.reasoning, 1000)
+    if summary:
+        embed.add_field(name="Summary", value=summary, inline=False)
 
-    if parsed.reasoning and parsed.answer and parsed.reasoning != body:
-        embed.add_field(name="Reasoning", value=parsed.reasoning[:1024], inline=False)
+    # Avoid duplicating the same text under Reasoning
+    if (
+        parsed.reasoning
+        and parsed.answer
+        and parsed.reasoning.strip() != parsed.answer.strip()
+    ):
+        reasoning = _shorten(parsed.reasoning, 700)
+        if reasoning:
+            embed.add_field(name="Why", value=reasoning, inline=False)
 
     if parsed.uncertainty:
-        embed.add_field(
-            name="Why this might be wrong",
-            value=parsed.uncertainty[:1024],
-            inline=False,
-        )
+        uncertainty = _shorten(parsed.uncertainty, 500)
+        if uncertainty:
+            embed.add_field(
+                name="Uncertainty",
+                value=uncertainty,
+                inline=False,
+            )
 
     labels = {
         "topic": "Topic",
@@ -193,23 +225,25 @@ def build_response_embed(
     }
     for key, label in labels.items():
         if key in parsed.extra_fields:
-            embed.add_field(
-                name=label,
-                value=parsed.extra_fields[key][:1024],
-                inline=False,
-            )
+            value = _shorten(parsed.extra_fields[key], 700)
+            if value:
+                embed.add_field(name=label, value=value, inline=False)
 
-    if parsed.sources_text:
-        # Keep short in embed; buttons carry links
-        short = parsed.sources_text
-        if len(short) > 400:
-            short = short[:400] + "…"
-        embed.add_field(name="Sources", value=short, inline=False)
+    if parsed.source_links:
+        lines = [f"• [{label}]({url})" for label, url in parsed.source_links[:4]]
+        embed.add_field(name="Sources", value="\n".join(lines)[:1024], inline=False)
+    elif parsed.sources_text:
+        short = _shorten(parsed.sources_text, 350)
+        if short:
+            embed.add_field(name="Sources", value=short, inline=False)
 
-    if not embed.fields and parsed.raw:
-        embed.description = parsed.raw[:4000]
+    if not embed.fields and not embed.description and parsed.raw:
+        embed.description = parsed.raw[:1800]
 
-    embed.set_footer(text="Official & scientific sources preferred")
+    footer_bits = ["Prefer official & scientific sources"]
+    if cached:
+        footer_bits.append("cached")
+    embed.set_footer(text=" · ".join(footer_bits))
     return embed
 
 

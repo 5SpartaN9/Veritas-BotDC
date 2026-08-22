@@ -7,6 +7,8 @@ from discord.ext import commands
 from cogs.music import Music, MusicControlView
 from config import PANEL_URL, SITE_URL
 from utils.history import history_store
+from utils.plans import get_plan_info
+from utils.rate_limit import rate_limiter
 from utils.scores import score_store
 from utils.settings import settings_store
 
@@ -24,17 +26,17 @@ QUICK_START = (
     "2. `/check text:` — fact-check a claim\n"
     "3. **Reply** to a message with `@Veritas is that true?`\n"
     "4. Right-click a message → **Apps** → **Verify claim**\n"
-    "5. `/help` — full command list"
+    "5. `/status` — plan & limits left\n"
+    "6. `/help` — full command list"
 )
 
 ESSENTIAL_COMMANDS = (
-    "`/about` `/help` — overview & full list\n"
+    "`/about` `/help` `/status` — overview, list, plan & limits\n"
     "`/ask` `/check` `/explain` `/sources`\n"
     "`/compare` `/cite` `/debate` `/multicheck`\n"
     "`/myscore` — your private fact-check stats\n"
     "`/settings` — language (admins)\n"
-    "`/watchlist` — claim prompts on channel (admins)\n"
-    "`/music` — play audio"
+    "`/watchlist` — claim prompts on channel (admins)"
 )
 
 HELP_TEXT = """**Veritas — commands**
@@ -57,23 +59,19 @@ HELP_TEXT = """**Veritas — commands**
 **Server**
 • `/about` — bot overview (good to pin)
 • `/help` — this list
-• `/ping` — status and latency
+• `/status` — plan, demo end, AI limits left
+• `/ping` — latency
 • `/history count:` — recent checks on this channel
 • `/myscore` — your TRUE/FALSE stats (private)
 • `/settings language:` — Auto / EN / PL / RU / ZH (admins)
-• `/panel` — music control panel
 • `/autochat` — when the bot auto-replies
 • `/watchlist` — offer Check this? on claim-like messages
 
-**Music**
-• `/music link:` — YouTube / Spotify / track name
-• `/skip` `/queue` `/pause` `/resume` `/nowplaying` `/stop`
-
-**Limits (budget plan)**
-• Free: 2 AI / 10 min per user, 15 / day per server
-• Premium: 8 AI / 10 min per user, 80 / day per server
-• Ultra Premium: 20 AI / 10 min per user, 500 / day per server (huge servers)
-• Repeated questions may use cache
+**Limits (per plan)**
+• Free: 2 AI / 10 min per user · 10 / day per server
+• Premium: 5 AI / 10 min per user · 12 / day per server
+• Ultra: 10 AI / 10 min per user · 35 / day per server
+• Repeated questions may use cache (does not always spend a limit)
 """
 
 
@@ -191,7 +189,67 @@ class Utility(commands.Cog):
             f"✅ AI reply language set to **{language.name}**.",
         )
 
-    @app_commands.command(name="ping", description="Bot status and latency.")
+    @app_commands.command(
+        name="status",
+        description="This server's plan, demo end date, and AI limits left.",
+    )
+    async def status(self, interaction: discord.Interaction) -> None:
+        guild = interaction.guild
+        guild_id = guild.id if guild else None
+        plan = get_plan_info(guild_id) if guild_id else None
+        used_u, limit_u, retry_u = rate_limiter.peek_user(interaction.user.id, guild_id)
+        used_g, limit_g = rate_limiter.peek_guild_daily(guild_id)
+
+        if plan is None:
+            label = "DM / no server"
+            plan_note = "Limits use Free defaults outside a server."
+            color = discord.Color.from_rgb(117, 117, 117)
+        elif plan.plan == "ultra" and plan.is_trial:
+            label = f"Ultra Demo · {plan.trial_days_left}d left"
+            plan_note = f"Demo until **{plan.trial_ends}**."
+            color = discord.Color.from_rgb(201, 166, 107)
+        elif plan.plan == "ultra":
+            label = plan.label
+            plan_note = "Paid Ultra is active on this server."
+            color = discord.Color.from_rgb(201, 166, 107)
+        elif plan.plan == "trial":
+            label = f"Premium Demo · {plan.trial_days_left}d left"
+            plan_note = f"Demo until **{plan.trial_ends}**."
+            color = discord.Color.from_rgb(232, 184, 109)
+        elif plan.plan == "premium":
+            label = "Premium"
+            plan_note = "Paid Premium is active on this server."
+            color = discord.Color.from_rgb(110, 196, 190)
+        else:
+            label = "Free"
+            plan_note = "Upgrade in the dashboard for higher limits."
+            color = discord.Color.from_rgb(117, 117, 117)
+
+        left_u = max(0, limit_u - used_u)
+        left_g = max(0, limit_g - used_g)
+        user_line = f"**{left_u}/{limit_u}** left in this 10-minute window"
+        if retry_u:
+            user_line += f"\nNext slot in **{retry_u}s**"
+        server_line = f"**{left_g}/{limit_g}** left today (UTC day)"
+
+        embed = discord.Embed(
+            title="Veritas — server status",
+            description=f"**Plan:** {label}\n{plan_note}",
+            color=color,
+        )
+        if guild:
+            embed.add_field(name="Server", value=guild.name, inline=False)
+        embed.add_field(name="Your AI limit", value=user_line, inline=False)
+        embed.add_field(name="Server daily limit", value=server_line, inline=False)
+        embed.add_field(
+            name="Dashboard",
+            value=f"[Open panel]({PANEL_URL})",
+            inline=False,
+        )
+        embed.set_footer(text="Limits reset with time · /help for commands")
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+
+    @app_commands.command(name="ping", description="Bot latency.")
     async def ping(self, interaction: discord.Interaction) -> None:
         latency_ms = round(self.bot.latency * 1000)
         music = self._music_cog()
@@ -278,7 +336,7 @@ class Utility(commands.Cog):
         embed.add_field(
             name="Quick commands",
             value=(
-                "`/about` `/help` `/ask` `/check` `/debate` `/multicheck`\n"
+                "`/about` `/help` `/status` `/ask` `/check`\n"
                 "`/myscore` `/settings` `/watchlist` `/history`"
             ),
             inline=False,
